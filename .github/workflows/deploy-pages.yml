@@ -48,9 +48,17 @@ jobs:
             echo "No custom domain; using base $PUBLIC_BASE_PATH"
           fi
           PUBLIC_BASE_PATH=$PUBLIC_BASE_PATH npm run build
+          # Marker & health files (always create)
           echo "Commit: $GITHUB_SHA" > dist/DEPLOY_MARKER.txt
-          # Ensure health file exists (should already be copied if in public/)
-          if [ -f public/health.txt ]; then cp public/health.txt dist/health.txt; fi
+          if [ -f public/health.txt ]; then
+            cp public/health.txt dist/health.txt
+          else
+            echo "OK" > dist/health.txt
+          fi
+          # Sanity check for alias import resolution (VoicesSection expects quotes module)
+          if grep -R "@/config/quotes" -n src/sections/VoicesSection.tsx >/dev/null 2>&1; then
+            echo "Alias reference '@/config/quotes' present in VoicesSection.tsx"
+          fi
       - name: Debug Dist Contents
         run: |
           echo "Listing built dist files:" 
