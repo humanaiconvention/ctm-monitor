@@ -85,6 +85,13 @@ jobs:
           PUBLIC_BASE_PATH=$PUBLIC_BASE_PATH npm run build
           echo "Commit: $GITHUB_SHA" > dist/DEPLOY_MARKER.txt
           if [ -f public/health.txt ]; then cp public/health.txt dist/health.txt; else echo "OK" > dist/health.txt; fi
+          # Version stamping: create version.json and inject meta tag & window global
+          BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          jq -n --arg commit "$GITHUB_SHA" --arg time "$BUILD_TIME" --arg ref "${GITHUB_REF#refs/heads/}" '{commit:$commit,time:$time,ref:$ref}' > dist/version.json
+          # Inject meta tag (before closing head) & window.__APP_VERSION__
+          if grep -q '</head>' dist/index.html; then
+            sed -i "s#</head>#<meta name=\"x-app-version\" content=\"$GITHUB_SHA\" />\n<script>window.__APP_VERSION__=$(cat dist/version.json)</script>\n</head>#" dist/index.html || true
+          fi
       - name: Dist Diagnostics
         run: |
           echo "Listing dist:"; ls -al web/dist | head -80
@@ -120,6 +127,96 @@ jobs:
           echo "Deployment URL: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "Commit: $GITHUB_SHA" >> $GITHUB_STEP_SUMMARY
           echo "Base Path: ${PUBLIC_BASE_PATH:-/(computed by vite)}" >> $GITHUB_STEP_SUMMARY
+          echo "Version JSON: ${{ steps.deployment.outputs.page_url }}/version.json" >> $GITHUB_STEP_SUMMARY
+      - name: Slack Notify (optional)
+        if: success() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          payload=$(jq -n --arg url "${{ steps.deployment.outputs.page_url }}" --arg sha "$GITHUB_SHA" '{text:"Deploy succeeded", url:$url, commit:$sha}')
+          curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" || echo "Slack notify failed"
+
+  lighthouse:
+    name: Lighthouse & Perf (gradual)
+    needs: quality
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '20'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install deps (web)
+        run: |
+          npm --workspace web ci || (cd web && npm install)
+      - name: Build preview server
+        working-directory: web
+        run: npm run build
+      - name: Run Lighthouse (if script exists)
+        working-directory: web
+        run: |
+          if npm run | grep -q 'lhci'; then npm run lhci || echo 'Lighthouse failed (non-blocking)'; else echo 'No lhci script'; fi
+      - name: Perf budget (if script exists)
+        working-directory: web
+        run: |
+          if npm run | grep -q 'perf:check'; then npm run perf:check || echo 'Perf check failed (non-blocking)'; else echo 'No perf:check script'; fi
+      - name: Upload Lighthouse Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-gradual
+          path: web/.lighthouseci
+          if-no-files-found: ignore
+
+  pr-preview:
+    name: PR Ephemeral Preview
+    if: github.event_name == 'pull_request'
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install deps
+        run: |
+          npm ci
+          npm --workspace web ci || (cd web && npm install)
+      - name: Build (PR preview base)
+        run: |
+          cd web
+          export PUBLIC_BASE_PATH="/pr-${{ github.event.pull_request.number }}"
+          echo "Preview base: $PUBLIC_BASE_PATH"
+          PUBLIC_BASE_PATH=$PUBLIC_BASE_PATH npm run build
+          echo "Commit: $GITHUB_SHA" > dist/DEPLOY_MARKER.txt
+          echo "OK" > dist/health.txt
+          echo "PR Preview for #${{ github.event.pull_request.number }}" > dist/preview-info.txt
+      - name: Upload Preview Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+      - name: Deploy Preview
+        id: pr_deploy
+        uses: actions/deploy-pages@v4
+      - name: Comment Preview URL
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            🧪 PR Preview Ready
+            URL: ${{ steps.pr_deploy.outputs.page_url }}pr-${{ github.event.pull_request.number }}/
+            Commit: `${{ github.sha }}`
+            (Base: /pr-${{ github.event.pull_request.number }})
 
   preview-comment:
     name: PR Preview Note
