@@ -4,12 +4,12 @@
   "workspaces": ["web"],
   "scripts": {
     "dev": "npm run dev --workspace web",
-    "dev:https": "npm run dev:https --workspace web",
     "build": "npm run build --workspace web",
     "lint": "npm run lint --workspace web",
     "preview": "npm run preview --workspace web",
     "test": "npm run test --workspace web",
     "test:watch": "npm run test:watch --workspace web",
+    "test:coverage": "npm run test:coverage --workspace web",
     "typecheck": "npm run typecheck --workspace web"
   },
   "engines": {

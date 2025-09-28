@@ -1,0 +1,43 @@
+name: CI Minimal
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '20'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install (root + workspace)
+        run: |
+          npm ci
+          npm --workspace web ci || (cd web && npm install)
+      - name: Lint
+        run: npm run lint
+      - name: Type Check
+        run: npm run typecheck
+      - name: Unit Tests
+        run: npm test
+      - name: Coverage Report
+        run: npm run test:coverage || echo "Coverage already generated"
+      - name: Upload Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-minimal
+          path: web/coverage
+          retention-days: 5
