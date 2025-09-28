@@ -2,6 +2,16 @@
 # Restore by renaming to ci.yml and removing the paused stub.
 
 name: CI
+################################################################################
+# Action Pin Table (Generated 2025-09-28)
+# actions/checkout v5.0.0 08c6903cd8c0fde910a37f88322edcfb5dd907a8
+# actions/setup-node v5.0.0 a0853c24544627f65ddf259abe73b1d18a591444
+# actions/upload-artifact v4.6.2 ea165f8d65b6e75b540449e92b4886f43607fa02
+# actions/download-artifact v5.0.0 634f93cb2916e3fdff6788551b99b062d0335ce0
+# actions/cache v4.3.0 0057852bfaa89a56745cba8c7296529d2fc39830
+# peter-evans/find-comment v3.1.0 3eae4d37986fb5a8592848f6a574fdf654e61f9e
+# peter-evans/create-or-update-comment v4.0.0 71345be0265236311c031f5c7866368bd1eff043
+################################################################################
 
 on:
   push:
@@ -21,9 +31,9 @@ jobs:
       NODE_VERSION: '20'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -43,7 +53,7 @@ jobs:
           npm run test:coverage || echo "Coverage script failed or missing; continuing"
       - name: Upload Coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-report
           path: web/coverage
@@ -62,14 +72,14 @@ jobs:
           fi
       - name: Upload Size Status
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: size-status
           path: size-status.txt
           if-no-files-found: ignore
           retention-days: 3
       - name: Upload Dist Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist-build
           path: web/dist
@@ -83,9 +93,9 @@ jobs:
       NODE_VERSION: '20'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -100,7 +110,7 @@ jobs:
           echo "CACHE_WEEK=$WEEK_KEY" >> $GITHUB_ENV
           echo "week=$WEEK_KEY" >> $GITHUB_OUTPUT
       - name: Restore Previous Snapshots Cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: web/previous-snapshots
           key: visual-snapshots-${{ steps.week.outputs.week }}-${{ github.run_id }}
@@ -108,7 +118,7 @@ jobs:
             visual-snapshots-${{ steps.week.outputs.week }}-
             visual-snapshots-
       - name: Restore Previous Perf Marks Cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: web/previous-perf
           key: perf-marks-${{ steps.week.outputs.week }}-${{ github.run_id }}
@@ -125,7 +135,7 @@ jobs:
         run: npm run test:e2e
       - name: Upload Playwright Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
             name: playwright-report
             path: web/playwright-report
@@ -138,7 +148,7 @@ jobs:
           node scripts/a11y-check.mjs || (echo "A11Y check failed" && exit 1)
       - name: Upload Accessibility Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: accessibility-report
           path: web/a11y-report.json
@@ -164,7 +174,7 @@ jobs:
           node scripts/check-perf-marks.mjs
       - name: Upload Visual & Perf Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: visual-perf-artifacts
           path: |
@@ -193,9 +203,9 @@ jobs:
       NODE_VERSION: '20'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
             node-version: ${{ env.NODE_VERSION }}
             cache: npm
@@ -221,7 +231,7 @@ jobs:
         run: |
           cp -r .lighthouseci .lighthouseci-baseline || true
       - name: Cache Lighthouse Baseline (week scoped)
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: web/.lighthouseci-baseline
           key: lighthouse-baseline-${{ steps.week_lh.outputs.week }}-${{ github.run_id }}
@@ -230,7 +240,7 @@ jobs:
             lighthouse-baseline-
       - name: Upload LHCI Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: lighthouse-results
           path: web/.lighthouseci
@@ -244,9 +254,9 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 20
           cache: npm
@@ -256,7 +266,7 @@ jobs:
         working-directory: web
         run: npm run build
       - name: Download Lighthouse results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: lighthouse-results
           path: web/.lighthouseci
@@ -265,19 +275,19 @@ jobs:
         run: |
           if [ -f badges/lighthouse-last-success.json ]; then cp badges/lighthouse-last-success.json badges/lighthouse-last-success.json; fi || true
       - name: Download Visual & Perf Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: visual-perf-artifacts
           path: web
         continue-on-error: true
       - name: Download Accessibility Report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: accessibility-report
           path: web
         continue-on-error: true
       - name: Download Coverage Report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: coverage-report
           path: web/coverage
@@ -317,9 +327,9 @@ jobs:
       NODE_VERSION: '20'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -331,7 +341,7 @@ jobs:
         working-directory: web
         run: npm run analyze
       - name: Upload Bundle Stats
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: bundle-stats
           path: web/dist/stats.html
@@ -344,9 +354,9 @@ jobs:
     needs: [setup-and-build, e2e]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 20
           cache: npm
@@ -356,7 +366,7 @@ jobs:
         id: week_pr
         run: echo "WEEK_KEY=$(date +%G-%V)" >> $GITHUB_ENV && echo "week=$WEEK_KEY" >> $GITHUB_OUTPUT
       - name: Restore Lighthouse Baseline Cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: web/.lighthouseci-baseline
           key: lighthouse-baseline-${{ steps.week_pr.outputs.week }}-${{ github.run_id }}
@@ -364,40 +374,40 @@ jobs:
             lighthouse-baseline-${{ steps.week_pr.outputs.week }}-
             lighthouse-baseline-
       - name: Reuse Coverage Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: coverage-report
           path: web/coverage
       - name: Reuse Size Status Artifact
         if: always()
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: size-status
           path: web
       - name: Reuse Accessibility Artifact
         if: always()
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: accessibility-report
           path: web
         continue-on-error: true
       - name: Reuse Visual & Perf Artifacts
         if: always()
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: visual-perf-artifacts
           path: web
         continue-on-error: true
       - name: Optional Lighthouse (main) Artifact
         if: always()
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: lighthouse-results
           path: web/.lighthouseci
         continue-on-error: true
       - name: Optional Lighthouse PR Artifact
         if: always()
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: lighthouse-pr
           path: web/.lighthouseci
@@ -407,7 +417,7 @@ jobs:
         run: node scripts/generate-aggregate-metrics.mjs || echo "aggregate generation failed"
       - name: Upload Aggregate Metrics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: aggregate-metrics
           path: web/aggregate-metrics.json
@@ -420,29 +430,45 @@ jobs:
           echo "comment<<EOF" >> $GITHUB_OUTPUT
           cat ../pr-comment.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-      - name: Find Existing Comment
-        id: find
-        uses: peter-evans/find-comment@v3
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: '### QA Summary'
-      - name: Create Or Update Comment
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          comment-id: ${{ steps.find.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: ${{ steps.gen.outputs.comment }}
-          edit-mode: replace
+      - name: Post PR Quality Comment
+        if: github.event_name == 'pull_request'
+        run: |
+          set -e
+          pr_number=$(echo "$GITHUB_REF" | awk -F'/' '{print $3}')
+          echo "PR number parsed: $pr_number"
+          body_file=pr-comment.md
+          printf "%s" "${COMMENT_BODY}" > "$body_file"
+          # Try gh first for update-or-create behavior
+          if command -v gh >/dev/null 2>&1; then
+            # Find existing
+            existing_id=$(gh api repos/${GITHUB_REPOSITORY}/issues/$pr_number/comments --paginate -q \
+              '.[] | select(.user.login=="github-actions[bot]" and (.body|contains("### QA Summary"))) | .id' | head -n1 || true)
+            if [ -n "$existing_id" ]; then
+              echo "Updating existing comment $existing_id"
+              gh api repos/${GITHUB_REPOSITORY}/issues/comments/$existing_id -X PATCH -f body=@$body_file
+            else
+              echo "Creating new comment"
+              gh api repos/${GITHUB_REPOSITORY}/issues/$pr_number/comments -f body=@$body_file
+            fi
+          else
+            echo "gh not available; creating new comment via curl"
+            escaped=$(jq -Rs . < "$body_file")
+            curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+              -X POST https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/$pr_number/comments \
+              -d "{\"body\":${escaped}}" >/dev/null
+          fi
+        env:
+          COMMENT_BODY: ${{ steps.gen.outputs.comment }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   lighthouse-pr:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     needs: setup-and-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 20
           cache: npm
@@ -460,7 +486,7 @@ jobs:
         working-directory: web
         run: npm run perf:check
       - name: Upload Lighthouse Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: lighthouse-pr
           path: web/.lighthouseci

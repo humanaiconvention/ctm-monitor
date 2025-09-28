@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 
 import './App.css'
+import VersionFooter from './components/VersionFooter'
 import { consciousnessQuotes } from './config/quotes'
 
 const MAX_AUTOPLAY_QUOTES = 30
@@ -246,6 +247,7 @@ function App() {
           <p>© {new Date().getFullYear()} HumanAI Convention. Built for collective intelligence.</p>
           <a href="#top">Back to top</a>
         </div>
+        <VersionFooter />
       </footer>
     </div>
   )

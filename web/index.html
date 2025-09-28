@@ -9,9 +9,21 @@
       name="description"
       content="HumanAI Convention builds trauma-informed, community-led governance frameworks for responsible artificial intelligence."
     />
+    <meta name="x-app-version" content="" />
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Will be replaced at runtime after version.json loads (fallback) or inlined by future enhancement
+      (function attachVersion(){
+        fetch('/version.json').then(r=>r.ok?r.json():null).then(data=>{
+          if(!data) return;
+          window.__APP_VERSION__ = data;
+          const meta = document.querySelector('meta[name="x-app-version"]');
+          if(meta) meta.setAttribute('content', data.version + '+' + (data.commit||''));
+        }).catch(()=>{});
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

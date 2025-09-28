@@ -1,5 +1,15 @@
 name: Deploy Azure Static Web App
 
+################################################################################
+# Action Pin Table (Generated 2025-09-28)
+# Format: <action> <tag> <commit-sha>
+# actions/checkout v5.0.0 08c6903cd8c0fde910a37f88322edcfb5dd907a8
+# actions/setup-node v5.0.0 a0853c24544627f65ddf259abe73b1d18a591444
+# actions/upload-artifact v4.6.2 ea165f8d65b6e75b540449e92b4886f43607fa02
+# actions/download-artifact v5.0.0 634f93cb2916e3fdff6788551b99b062d0335ce0
+# Azure/static-web-apps-deploy v1 1a947af9992250f3bc2e68ad0754c0b0c11566c9
+################################################################################
+
 on:
   push:
     branches: [ main ]
@@ -22,10 +32,10 @@ jobs:
       VITE_ENABLE_PREVIEW_GATE: true # build with gate enabled; app decides runtime gating
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -43,7 +53,7 @@ jobs:
         run: npm run build
 
       - name: Upload Artifact (dist)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: web-dist
           path: web/dist
@@ -56,22 +66,21 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Checkout (for action metadata)
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: web-dist
           path: web-dist
 
       - name: Deploy Preview
-        uses: Azure/static-web-apps-deploy@v1
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
           app_location: 'web' # still needed though we deploy dist; action expects structure
           output_location: 'dist'
-          skip_api_build: true
 
       - name: Skip Note (Missing Token)
         if: github.event_name == 'pull_request'
@@ -96,20 +105,19 @@ jobs:
             set-password: 'true'
 
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: web-dist
           path: web-dist
 
       - name: Deploy to Azure Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
           app_location: 'web'
           output_location: 'dist'
-          skip_api_build: true
 
       - name: Post Deployment Info
         if: success()
