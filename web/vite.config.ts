@@ -18,4 +18,9 @@ const base = normalizeBase(process.env.PUBLIC_BASE_PATH)
 export default defineConfig({
   plugins: [react()],
   base,
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
 })
