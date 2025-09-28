@@ -1,0 +1,42 @@
+name: Deploy gh-pages Fallback
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '20'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm --workspace web ci || (cd web && npm install)
+      - name: Build (GitHub Pages base)
+        run: |
+          export PUBLIC_BASE_PATH="/${{ github.event.repository.name }}"
+          echo "Using base $PUBLIC_BASE_PATH"
+          (cd web && PUBLIC_BASE_PATH=$PUBLIC_BASE_PATH npm run build)
+      - name: Copy health file confirm
+        run: |
+          ls -l web/dist/health.txt || echo "health.txt missing" && true
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          publish_branch: gh-pages
+          publish_dir: web/dist
+          commit_message: "deploy: ${GITHUB_SHA}"
+          force_orphan: true
