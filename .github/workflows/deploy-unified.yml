@@ -1,0 +1,136 @@
+name: Unified CI & Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: unified-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '20'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install deps (root + web)
+        run: |
+          npm ci
+          npm --workspace web ci || (cd web && npm install)
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit Tests
+        run: npm test
+      - name: Coverage (non-blocking)
+        run: npm run test:coverage || echo "Coverage step failed or not present"
+      - name: Upload Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: web/coverage
+          if-no-files-found: ignore
+          retention-days: 5
+
+  deploy:
+    name: Build & Deploy Pages
+    needs: quality
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: github-pages
+    env:
+      NODE_VERSION: '20'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install deps (root + web)
+        run: |
+          npm ci
+          npm --workspace web ci || (cd web && npm install)
+      - name: Build Site
+        run: |
+          cd web
+          if [ -n "$CUSTOM_DOMAIN" ]; then
+            export PUBLIC_BASE_PATH='/'
+            echo "Custom domain detected: $CUSTOM_DOMAIN (base=/)"
+          else
+            export PUBLIC_BASE_PATH="/${{ github.event.repository.name }}"
+            echo "No custom domain; using base $PUBLIC_BASE_PATH"
+          fi
+          PUBLIC_BASE_PATH=$PUBLIC_BASE_PATH npm run build
+          echo "Commit: $GITHUB_SHA" > dist/DEPLOY_MARKER.txt
+          if [ -f public/health.txt ]; then cp public/health.txt dist/health.txt; else echo "OK" > dist/health.txt; fi
+      - name: Dist Diagnostics
+        run: |
+          echo "Listing dist:"; ls -al web/dist | head -80
+          echo "Marker:"; cat web/dist/DEPLOY_MARKER.txt || true
+          echo "Health:"; cat web/dist/health.txt || true
+          [ -f web/dist/DEPLOY_MARKER.txt ] || { echo "Missing marker"; exit 1; }
+          [ -f web/dist/health.txt ] || { echo "Missing health"; exit 1; }
+      - name: Inject CNAME (if custom domain)
+        run: |
+          if [ -n "$CUSTOM_DOMAIN" ]; then echo "$CUSTOM_DOMAIN" > web/dist/CNAME; fi
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Uptime Smoke Test
+        run: |
+          URL="${{ steps.deployment.outputs.page_url }}"
+          echo "Probing $URL ..."
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$URL" || echo 000)
+            echo "Attempt $i -> $code"; [ "$code" = "200" ] && break; sleep 3;
+          done
+          curl -I "$URL/DEPLOY_MARKER.txt" || true
+          curl -I "$URL/health.txt" || true
+      - name: (Optional) Webhook Placeholder
+        if: ${{ false }}
+        run: echo "Add webhook curl here (disabled)"
+      - name: Deployment Summary
+        run: |
+          echo "Deployment URL: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: $GITHUB_SHA" >> $GITHUB_STEP_SUMMARY
+          echo "Base Path: ${PUBLIC_BASE_PATH:-/(computed by vite)}" >> $GITHUB_STEP_SUMMARY
+
+  preview-comment:
+    name: PR Preview Note
+    if: github.event_name == 'pull_request'
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment (no deploy for PR)
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ✅ Quality checks completed.
+            This PR does not auto-deploy; merge to main to publish.

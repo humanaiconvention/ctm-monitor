@@ -1,10 +1,7 @@
 name: Deploy Pages
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  # Converted to manual-only after unified workflow introduction
   workflow_dispatch:
 
 permissions:

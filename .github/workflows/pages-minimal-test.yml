@@ -1,6 +1,7 @@
 name: Pages Minimal Test
 
 on:
+  # Historical provisioning test kept manual-only
   workflow_dispatch:
 
 permissions:

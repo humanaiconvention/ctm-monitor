@@ -1,10 +1,8 @@
 name: CI Minimal
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  # Superseded by unified workflow; manual invocation only
+  workflow_dispatch:
 
 permissions:
   contents: read
