@@ -23,16 +23,24 @@ jobs:
           cache: npm
       - name: Install Dependencies
         run: |
+          echo "Node version:" $(node -v || true)
+          echo "NPM version:" $(npm -v || true)
           npm ci
+          # workspace install ensures web workspace dependencies installed
           npm --workspace web ci || (cd web && npm install)
       - name: Build (GitHub Pages base)
         run: |
           export PUBLIC_BASE_PATH="/${{ github.event.repository.name }}"
           echo "Using base $PUBLIC_BASE_PATH"
           (cd web && PUBLIC_BASE_PATH=$PUBLIC_BASE_PATH npm run build)
-      - name: Copy health file confirm
+      - name: Post-build debug listing
         run: |
-          ls -l web/dist/health.txt || echo "health.txt missing" && true
+          echo "Top-level dist contents:"; ls -al web/dist | head -50
+          echo "health.txt status:"; ls -l web/dist/health.txt || echo "health.txt missing" && true
+          echo "First 40 lines of index.html:"; sed -n '1,40p' web/dist/index.html || true
+          echo "Searching for base path occurrences:"; grep -o "/${{ github.event.repository.name }}" -n web/dist/index.html | head -10 || true
+      - name: Create .nojekyll
+        run: echo > web/dist/.nojekyll
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -40,3 +48,4 @@ jobs:
           publish_dir: web/dist
           commit_message: "deploy: ${GITHUB_SHA}"
           force_orphan: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
