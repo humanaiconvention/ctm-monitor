@@ -1,0 +1,55 @@
+name: Pages Minimal Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-minimal-test
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: github-pages
+    steps:
+      - name: Echo start
+        run: echo "Starting minimal Pages test at $(date -u)"
+      - name: Create artifact content
+        run: |
+          mkdir dist
+          cat > dist/index.html <<'HTML'
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8" />
+              <title>Minimal Pages Test</title>
+            </head>
+            <body>
+              <h1>Minimal Pages Test</h1>
+              <p>Deployed at: $(date -u)</p>
+              <p>Commit: $GITHUB_SHA</p>
+            </body>
+          </html>
+          HTML
+          ls -al dist
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Output URL
+        run: echo "Deployed to ${{ steps.deployment.outputs.page_url }}"
