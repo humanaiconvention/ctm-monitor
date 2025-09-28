@@ -1,0 +1,40 @@
+name: Pages Minimal Debug
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-minimal-debug
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: github-pages
+    steps:
+      - name: Create minimal dist
+        run: |
+          mkdir -p dist
+          cat > dist/index.html <<'EOF'
+          <!doctype html>
+          <html><head><meta charset="utf-8"><title>Minimal Pages Debug</title></head>
+          <body>
+            <h1>Minimal Pages Debug</h1>
+            <p>Timestamp: $(date -u)</p>
+          </body></html>
+          EOF
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Echo deployed URL
+        run: |
+          echo "Deployed: ${{ steps.deployment.outputs.page_url }}"

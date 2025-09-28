@@ -20,6 +20,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: github-pages
     env:
       NODE_VERSION: '20'
       # CUSTOM_DOMAIN: set this as a repository variable (Settings -> Variables -> Actions)
