@@ -23,10 +23,11 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": "./src",
+    // Set baseUrl to project root so path aliases resolve consistently in tsc and vite build
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["*"],
-      "@": ["."]
+      "@/*": ["src/*"],
+      "@": ["src"]
     }
   },
   "include": ["src"]
