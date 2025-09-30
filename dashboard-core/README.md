@@ -91,3 +91,41 @@ Tagline: **We will know — together**
 6. User opt-in persistence (localStorage + signed policy export)
 7. Integrity attestation for adapter source (hash + supply chain metadata)
 
+
+## Open Research Base for Participatory Modeling
+
+HumanAI Convention aggregates a broad constellation of open research sources, scientific datasets, policy archives, and public knowledge platforms. These span:
+
+- Neuroscience & Brain Data: OpenNeuro, NeuroVault, Allen Brain Atlas, Human Connectome Project, BrainLife.io
+- Physics & Systems: CERN Open Data, NASA, Quantum Experiments Dataset (QED)
+- Machine Learning Ecosystem: ArXiv, Papers with Code, OpenML, Hugging Face
+- Open Science & Identity: OSF, ORCID, Zenodo, Figshare, Internet Archive
+- Economics & Governance: OECD, OECD AI Policy Observatory, World Bank, SEC Filings, OpenCorporates
+- Knowledge Graphs & Reference: Wikipedia, Wikidata, Stanford Encyclopedia of Philosophy
+- Geospatial & Events: OpenStreetMap, GDELT
+- Policy, Rights & Civil Society: AI Now Institute, EFF, Mozilla Foundation
+- Investigative & News Streams: ProPublica, Reuters, BBC, The Conversation, Google News
+
+Each source is:
+
+- Modular – activate only what you explicitly opt into
+- Remixable – designed for composable analytical tiles & cross-source synthesis
+- Citation-tracked – provenance and reference formatting (APA baseline) maintained
+- Transparent – capability surface & any constraints are enumerated before activation
+
+### Current Research Scaffold
+- `modules/research/adapters/*.js` – placeholder registration functions (metadata + future activate hooks)
+- `src/data/research-schema.json` – declarative list of supported research sources + metadata flags
+- `src/components/SourceSelector.js` – vanilla JS selector emitting user opt-in set
+
+### Roadmap (Incremental)
+1. Add JSON Schema for per-source capability descriptors (rate limits, modalities, license class)
+2. Implement provenance ledger writing signed activation manifests (hash + timestamp)
+3. Add ethics/impact scoring overlay combining source attributes with existing evaluator
+4. Introduce adaptive batching + caching layer for federated search across opted-in sources
+5. Provide reproducible query bundles (export/import) for scholarly auditing
+6. Add conflict heuristics (e.g., license incompatibility, derivative use restrictions)
+7. Integrate model-context protocol (MCP) negotiation for compliant tool invocation
+
+Tagline: **We will know — together**
+
