@@ -217,6 +217,26 @@ jobs:
           if grep -q '</head>' dist/index.html; then
             sed -i "s#</head>#<meta name=\"x-app-version\" content=\"$GITHUB_SHA\" />\n<script>window.__APP_VERSION__=$(cat dist/version.json)</script>\n</head>#" dist/index.html || true
           fi
+      - name: Index Hash Change (optional drift signal)
+        run: |
+          set -e
+          cd web
+          if [ ! -f dist/readyz.json ]; then echo "No dist/readyz.json present (build script may have changed)"; ls -al dist || true; exit 0; fi
+          PREV_URL="https://humanaiconvention.github.io/${{ github.event.repository.name }}/readyz.json"
+          echo "Attempting to fetch previous deployed readyz: $PREV_URL"
+          curl -sSf "$PREV_URL" -o previous-readyz.json || { echo "Previous readyz fetch failed (first deploy or unreachable)"; exit 0; }
+          echo "Running index hash change check (informational)."
+          set +e
+          node scripts/check-index-hash-changed.mjs previous-readyz.json dist/readyz.json --require-change
+          rc=$?
+          if [ $rc -eq 3 ]; then
+            echo "::warning::indexHash did not change while a change was required (potential missing content update)."
+          elif [ $rc -ne 0 ]; then
+            echo "Index hash check exited with code $rc (non-fatal)."
+          else
+            echo "Index hash check passed.";
+          fi
+          set -e
       - name: Bundle Size Manifest
         run: |
           cd web
