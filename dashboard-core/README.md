@@ -129,3 +129,23 @@ Each source is:
 
 Tagline: **We will know — together**
 
+### Previewing the Research Selector
+
+For a quick static preview (no build pipeline yet), open the HTML file directly in a browser that allows ES module file loading:
+
+```
+dashboard-core/src/demo/research-preview.html
+```
+
+If your browser blocks `file://` module imports, you can launch a tiny local server from the repo root:
+
+```powershell
+pwsh -c "cd dashboard-core/src; python -m http.server 8088"  # requires Python
+# then open http://localhost:8088/demo/research-preview.html
+```
+
+Current limitations:
+- Activation logic is not wired; only selection UI emits chosen sources.
+- No persistence; refresh clears selection.
+- No capability or license conflict surfacing yet.
+
