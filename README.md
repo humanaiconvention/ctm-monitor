@@ -5,6 +5,14 @@
  - Strict quality gating: lint (zero warnings), typecheck, unit tests must pass before any build/deploy job executes.
  - Secret preflight gating: production / preview deploys only run when required secrets are present (explicit skip vs silent failure).
 
+## Tagline  
+**We will know — together**
+
+This phrase is used by HumanAI Convention to signal our commitment to participatory inquiry and collective insight. It is not trademarked and is used in a non-commercial, public-benefit context. All usage is intended to remain open-source, remixable, and free from proprietary restriction.
+
+## Attribution & Usage  
+The tagline may be reused or remixed under the terms of the HumanAI Convention license, provided attribution is maintained and usage aligns with public-benefit and participatory principles.
+
 ## Live Site & Verification
 
 ![Deployed Integrity Status](https://img.shields.io/github/actions/workflow/status/humanaiconvention/humanaiconvention/deployed-integrity-check.yml?label=deployed%20integrity&logo=github)
@@ -54,6 +62,28 @@ Common scripts (run from `web/`):
 | `npm run verify` | Aggregate: lint + typecheck + build + security audit. Fails fast on any error. |
 | `npm run security:audit` | Production dependency vulnerability scan, JSON output to `audit.json`. |
 | `npm run verify:deployed` | Compare deployed site hash vs baseline (see integrity section). |
+
+### Navigation & Pages
+
+The web app now includes a dedicated `Learn More` page (`/learn-more`) which centralizes the formerly home‑page Mission and Vision content.
+
+Routing is handled client‑side via `react-router-dom@6`:
+
+Routes:
+- `/` – Landing experience (hero, dynamic quotes, participation & coming soon sections).
+- `/learn-more` – Mission, Vision narrative, and pillars (Ethical Infrastructure, Participatory Data, Science- & Culture- informed Research).
+
+The home hero includes a "Learn more" call‑to‑action that performs client navigation without a full reload. When adding new sections that warrant deeper explanation, prefer expanding the `/learn-more` page rather than bloating the landing screen; keep initial interaction fast and focused.
+
+Styling: Reuses the global hero background treatment with a leaner height and glass‑elevated pillar cards. Classes defined at the bottom of `web/src/App.css` under the `/* === Learn More Page Styles === */` marker.
+
+If you introduce additional pages:
+1. Create a component in `web/src/pages/`.
+2. Add a `<Route path="/new" element={<NewPage/>} />` to `web/src/main.tsx`.
+3. Add a CTA or navigation element in the hero or footer.
+4. Track a `page_view` event manually if the component triggers significant lazy content (current initialization already fires a page_view on load & navigation change events can be wired similarly).
+
+Analytics: The existing `page_view` event on initial load covers the root route. For future SSR or route-change tracking, consider adding a `useEffect` in each page component to emit `trackEvent({ category:'navigation', action:'page_view', label: location.pathname })`.
 
 Formatting: Prettier config lives at `.prettierrc.json`; keep stylistic overrides minimal to reduce churn. CI should use `npm run format:check` to enforce consistency without auto-committing.
 
