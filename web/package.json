@@ -1,7 +1,7 @@
 {
   "name": "web",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -34,6 +34,7 @@
     "coverage:badge": "node scripts/coverage-badge.mjs",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
+    "test:e2e": "node scripts/run-e2e.mjs",
     "test:visual": "playwright test tests/visual.spec.ts",
     "test:a11y": "playwright test tests/accessibility.spec.ts",
     "preview": "vite preview",
@@ -72,7 +73,7 @@
     "build:storybook": "storybook build",
     "chromatic": "chromatic --exit-zero-on-changes --storybook-build-dir storybook-static",
   "test:a11y:unit": "vitest run src/components/PreLogoSequence.test.tsx",
-  "test:visual:update": "PLAYWRIGHT_UPDATE_SNAPSHOTS=1 npm run test:visual",
+  "test:visual:update": "node scripts/update-visual.mjs",
   "logo:export": "tsx scripts/export-logo.tsx",
   "logo:repro": "node scripts/verify-logo-repro.mjs"
   },
