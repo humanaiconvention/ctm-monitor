@@ -233,20 +233,14 @@ const requestHandler = async (req, res) => {
   function parseCookies(header) {
     const out = {}; if (!header) return out; header.split(/; */).forEach(p=>{ const i=p.indexOf('='); if(i>0) out[p.slice(0,i)] = decodeURIComponent(p.slice(i+1)); }); return out;
   }
-  async function ensureTokenUtil() {
-    return import('./auth-token.mjs');
-  }
+  async function ensureSessionUtil() { return import('./session-util.mjs'); }
   async function verifySessionCookie() {
-    if (!SECRET) return null; // not configured
+    if (!SECRET) return null;
     const cookies = parseCookies(req.headers['cookie']);
     const raw = cookies['owner_session'];
     if (!raw) return null;
-    try {
-      const { verifyToken } = await ensureTokenUtil();
-      const payload = verifyToken(raw, SECRET);
-      if (payload.purpose !== 'owner-session') return null;
-      return payload;
-    } catch { return null; }
+    const { validateSession } = await ensureSessionUtil();
+    return validateSession(raw, SECRET, req);
   }
   // Auth endpoints
   if (url.startsWith('/session')) {
@@ -267,12 +261,12 @@ const requestHandler = async (req, res) => {
       const q = new URL(url, 'http://localhost');
       const token = q.searchParams.get('token');
       if (!token) { res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('Missing token'); return; }
-      const { verifyToken, signToken } = await ensureTokenUtil();
-      const payload = verifyToken(token, SECRET);
+  const { verifyToken } = await import('./auth-token.mjs');
+  const payload = verifyToken(token, SECRET);
       if (payload.purpose !== 'owner-login' || payload.sub !== OWNER_EMAIL) { res.writeHead(403, { 'Content-Type': 'text/plain' }); res.end('Invalid token'); return; }
-      // Issue session token
-      const exp = Math.floor(Date.now()/1000) + SESSION_MAX_AGE;
-      const sessionToken = signToken({ sub: OWNER_EMAIL, exp, purpose: 'owner-session' }, SECRET);
+  // Issue session token (with epoch + fingerprint binding)
+  const { issueSession } = await ensureSessionUtil();
+  const sessionToken = await issueSession(OWNER_EMAIL, SECRET, SESSION_MAX_AGE, req);
       const secure = (HTTPS_ENABLED ? 'Secure; ' : '');
       const cookie = `owner_session=${sessionToken}; Path=/; ${secure}HttpOnly; SameSite=Strict; Max-Age=${SESSION_MAX_AGE}`;
       res.writeHead(302, { ...baseHeaders(), 'Set-Cookie': cookie, Location: '/' });

@@ -10,20 +10,8 @@ declare module 'vitest' {
   interface Assertion<T = unknown> {
     toHaveNoViolations(): T
   }
-  interface AsymmetricMatchersContaining {
-    toHaveNoViolations(): void
-  }
-}
-
-declare global {
-  interface Window {
-    __APP_VERSION__?: {
-      name: string
-      version: string
-      commit: string
-      fullCommit?: string
-      buildTime: string
-    }
+  interface ExpectStatic {
+    toHaveNoViolations(): unknown
   }
 }
 

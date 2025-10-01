@@ -2,7 +2,17 @@ import { useEffect, useState } from 'react';
 import { shouldAutoRefresh, type ManifestDiffResult } from './sw-logic';
 import SW_CONFIG from './sw-config';
 import { trackEvent } from './analytics';
-import { trackAiEvent } from './appInsights';
+// AI telemetry is now lazy-loaded; defer import until needed to keep initial chunk lean
+let _trackAiEvent: ((name: string, props?: Record<string, unknown>) => void) | null = null;
+async function lazyTrackAiEvent(name: string, props?: Record<string, unknown>) {
+  try {
+    if (!_trackAiEvent) {
+      const mod = await import('./appInsights');
+      _trackAiEvent = mod.trackAiEvent;
+    }
+    _trackAiEvent?.(name, props);
+  } catch { /* ignore */ }
+}
 
 type UpdateInfo = ManifestDiffResult;
 
@@ -57,7 +67,7 @@ export function useServiceWorkerUpdates() {
       if (data?.type === 'hard-bust-complete') {
         const metadata = { ratio: data.ratio, total: data.total };
         trackEvent({ category: 'interaction', action: 'sw_hard_bust_complete', label: 'hard', metadata });
-        trackAiEvent('sw_hard_bust_complete', metadata);
+  lazyTrackAiEvent('sw_hard_bust_complete', metadata);
       }
     }
     navigator.serviceWorker.addEventListener('message', handler);

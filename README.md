@@ -5,13 +5,14 @@
  - Strict quality gating: lint (zero warnings), typecheck, unit tests must pass before any build/deploy job executes.
  - Secret preflight gating: production / preview deploys only run when required secrets are present (explicit skip vs silent failure).
 
-## Tagline  
-**We will know — together**
+## Taglines
+**Primary:** We will know — together.  
+**Secondary (epistemic anchor):** Trust isn’t a feeling. It’s evidence.
 
-This phrase is used by HumanAI Convention to signal our commitment to participatory inquiry and collective insight. It is not trademarked and is used in a non-commercial, public-benefit context. All usage is intended to remain open-source, remixable, and free from proprietary restriction.
+Primary expresses collaborative epistemic purpose. Secondary frames our verification philosophy—evidence over sentiment. Both are intentionally un-trademarked; usage is non-commercial, public-benefit, remixable.
 
 ## Attribution & Usage  
-The tagline may be reused or remixed under the terms of the HumanAI Convention license, provided attribution is maintained and usage aligns with public-benefit and participatory principles.
+Taglines may be reused or remixed under the project license with attribution, provided usage aligns with public-benefit and participatory principles.
 
 ## Live Site & Verification
 
@@ -257,6 +258,111 @@ Extensibility:
 - Introduce size per‑entrypoint budgets (initial vs lazy chunk segmentation).
 - Enforce Lighthouse Perf/Acc after date with remediation suggestions (largest contentful paint / time to interactive deltas).
 - Expand problem budget to include coverage floor and bundle composition entropy (e.g., number of JS chunks, third‑party bytes, license risk score).
+
+## Brand Geometry & Asset Export
+
+The HumanAI logomark + wordmark is generated parametrically (React + TypeScript) and exported reproducibly. Geometry is locked (variant pruning complete) to ensure a stable visual identity with documented mathematical provenance.
+
+### Design Constraints (Locked)
+- Inner arc span: 132° (empirically balanced for negative space & pillar rhythm).
+- Golden ratio (φ ≈ 1.618) governs: head gap, taper ratio (end:mid thickness ≈ φ), and proportional clearance.
+- Taper: strictly inward-only (no outward bulge) to keep vertical seams truly vertical while creating subtle mid-line tension.
+- Analytic outer start: arcs begin from computed outer solution; removed experimental circle-unification and cap variants (A1 baseline retained).
+- Wordmark alignment: "HumanAI" + "Convention" centered on pillar midpoint; dynamic spacing derived from measured head gap unless locked or embedded.
+
+### Export Script
+Location: `web/scripts/export-logo.tsx`
+
+Runs a server-side render of `<LogoHumanAI>` with the wordmark embedded inside the SVG, injects a metadata comment, and rasterizes multi-size PNGs using `@resvg/resvg-js` (WASM). Two monochrome variants are produced: light (`mono-light`) and dark (`mono-dark`).
+
+Command (run inside `web/`):
+```
+npm run logo:export
+```
+
+### Output Directory
+`web/dist/brand/`
+
+Generated files (base set now includes added sizes + favicon + manifest):
+```
+humanai-logo.svg
+humanai-logo-256.png
+humanai-logo-512.png
+humanai-logo-1024.png
+humanai-logo-2048.png
+humanai-logo-4096.png
+humanai-logo-dark.svg
+humanai-logo-dark-256.png
+humanai-logo-dark-512.png
+humanai-logo-dark-1024.png
+humanai-logo-dark-2048.png
+humanai-logo-dark-4096.png
+favicon.ico   (composed from 16,32,48,64,128,256 PNG sub-images)
+brand-assets-manifest.json (SHA-256 + size inventory)
+```
+
+Optional outlined variants (generated only when font file present and outline flag used):
+```
+humanai-logo-outline.svg
+humanai-logo-outline-256.png ... 4096.png
+humanai-logo-dark-outline.svg
+humanai-logo-dark-outline-256.png ... 4096.png
+```
+
+### Embedded Metadata Comment
+Each SVG includes a leading comment block immediately after the `<svg>` tag. Example (light variant):
+```
+<!--
+HumanAI Logo Export
+UIVariant: mono-light
+Geometry: analytic-locked
+φ: 1.618033988749895
+InnerSpanDeg: 132
+Taper: inward-only (end:mid ≈ φ)
+HeadGap: <numeric if metrics captured>
+PillarWidthEnd: <numeric>
+PillarWidthMid: <numeric>
+ArcMinThickness: <numeric>
+OverallWidthEstimate: <numeric>
+OverallHeightEstimate: <numeric>
+Generated: <ISO timestamp>
+Commit: <optional commit SHA if GIT_COMMIT env is set>
+-->
+```
+Values are emitted only when available; absent metrics are omitted to keep the block concise.
+
+### Variant Usage Guidance
+- Use light variant on dark backgrounds (#000 / near-black) and dark variant on light backgrounds (#fff / near-white).
+- Do not recolor individual internal elements independently; treat the mark as a single-tone asset for clarity and accessibility at small sizes.
+- Preserve aspect ratio; never horizontally stretch the SVG.
+
+### Regeneration & Reproducibility
+Because the geometry is code-defined and metrics are embedded, any future redistribution can be verified by re-running `npm run logo:export` at a given commit and diffing SVG path data & metadata lines. Differences beyond timestamp should be considered drift.
+
+### Implementation Notes
+- The export script strips the outer wrapping `<div>` (used in client layout) and isolates the root `<svg>` (injecting `xmlns` if missing) to satisfy the resvg parser.
+- Resize-based spacing logic is disabled (`lockWordmarkSpacing`) during export for deterministic layout.
+- Wordmark is embedded via `<text>` elements with responsive font sizes derived from measured head radius; this preserves proportionality when rasterized at multiple discrete widths.
+- Favicon generation: a multi-resolution `favicon.ico` is synthesized from the light variant PNGs at 16, 32, 48, 64, 128, 256.
+- Checksum manifest: `brand-assets-manifest.json` lists each asset with SHA-256 + byte size. Field `outlineIncluded` indicates whether outlined variants were part of the export run.
+- Outlined text mode (font independence): run with `npm run logo:export -- --outline` and provide an Inter font file at `web/assets/fonts/Inter-Regular.ttf` (or set `LOGO_OUTLINE_FONT` env). If the font file is absent, the script logs a warning and skips outline generation.
+
+Example verification of a single asset against manifest:
+```
+cd web/dist/brand
+shasum -a 256 humanai-logo.svg  # macOS / *nix (use certUtil -hashfile on Windows)
+```
+Compare the printed hash with the corresponding entry in `brand-assets-manifest.json`.
+
+### Potential Future Enhancements
+- Add a vector source variant with outline-converted text for environments lacking Inter font.
+- Generate additional sizes (256, 4096) or an adaptive favicon set.
+- Provide a JSON manifest enumerating exported files and hashing them (SHA-256) for tamper-evident distribution.
+ (The above three have been implemented: sizes expanded, favicon + manifest generated, outline mode scaffolded. Update list with new forward-looking items.)
+- Add SVG symbol sprite with both light/dark (and outlined) for easy embedding.
+- Provide monochrome accent variant with adjustable primary fill token.
+
+---
 - Add signed aggregate QA attestation referencing problem budget + size + perf results.
 
 ## Service Worker Updates & Asset Integrity
@@ -397,6 +503,129 @@ This is strictly a deterrent for casual browsing or automated indexing. For auth
 Passwords must satisfy:
 - Minimum length (default 10; configurable `min-length` input to composite action)
 - Required character classes (default: upper, lower, digit; optional addition: symbol)
+
+## Ethical Streaming Limits & Transparency
+
+Purpose: Prevent runaway token usage, promote equitable resource sharing, and provide users with clear, in‑band rationale when a streamed response is truncated for policy—not silently. The system favors usefulness (enough context to be actionable) while limiting over‑generation that increases cost, energy use, or hallucination risk.
+
+### How It Works
+When a streaming invocation begins, the agent evaluates a heuristic via `evaluateStreamingLimit()` using:
+1. Prompt length (short prompts usually require fewer tokens in reply)
+2. Presence of research / exploratory keywords ("analysis", "compare", "research", etc.)
+3. Environment ceilings for absolute and maximum allowed caps
+4. A floor (minimum) to avoid pathological under‑limits
+
+The resulting `limit` (surrogate token count) and `rationale` are emitted immediately as the first streaming chunk with `event: "limit_info"`.
+
+During streaming each partial delta increments a surrogate token counter (currently 1 per received text delta; this is an approximation and not a true tokenizer). If the counter reaches the enforced limit, the stream ends early and emits a `limit_notice` event carrying:
+```
+{ event: 'limit_notice', limit, tokens, rationale }
+```
+The final aggregated object returned by the streaming helper is marked `truncated: true` with the same limit metadata.
+
+### Transparency Events
+| Event | Meaning |
+|-------|---------|
+| `limit_info` | Discloses the applied limit and rationale before any content. |
+| `limit_notice` | Indicates the limit was reached; stream stops afterward. |
+
+All normal delta chunks may also include auxiliary fields: `tokens` (surrogate count so far) and `limit` for UI progress indicators.
+
+### Environment Variables
+| Variable | Purpose | Example Default |
+|----------|---------|-----------------|
+| `AZURE_STREAM_MAX_TOKENS` | Legacy hard cap override (takes precedence if lower than heuristic). | unset / 0 (no legacy cap) |
+| `STREAM_TOKEN_LIMIT_BASE` | Base heuristic limit starting point. | 400 |
+| `STREAM_TOKEN_LIMIT_MAX` | Hard upper bound the heuristic will not exceed. | 1200 |
+| `STREAM_TOKEN_LIMIT_MIN` | Minimum floor to ensure useful replies. | 60 |
+
+Unset values fall back to internal defaults. Adjust cautiously; overly high maxima reduce governance benefits.
+
+### Ethical Rationale
+1. Cost & Energy Stewardship: Truncating early prevents unnecessary compute expenditure and carbon impact for low‑value extra verbosity.
+2. Hallucination Reduction: Very long generations, especially after the core answer is provided, correlate with increased tangential / fabricated content.
+3. Fair Share: In multi‑tenant or rapid iteration scenarios, moderate caps reduce latency spikes and queuing for other users.
+4. User Agency: Immediate disclosure lets a user decide to reformulate or request an extended run (future enhancement) rather than silently receiving a shorter answer.
+
+### Approximate Counting Caveat
+Current counting treats each textual SSE delta as one "surrogate token". This is NOT an exact tokenization and may under/over estimate actual model tokens. The limit thus reflects an *approximate verbosity budget*, not a billing‑grade token number. Future improvement: integrate a lightweight tokenizer (e.g., tiktoken compatible) when available without large bundle cost.
+
+### Extensibility Roadmap
+- Adaptive Re‑request: Allow user to request +N additional tokens with explicit justification (logged for audit).
+- Dynamic Risk Modulation: Increase strictness when system detects elevated hallucination risk patterns (e.g., multiple speculative follow‑on deltas without new user input).
+- Per‑User Budget Pools: Combine with a refillable quota to ensure fair distribution under load.
+
+### UI Integration Guidance
+- Display an unobtrusive progress indicator (tokens / limit) when `limit_info` arrives.
+- On `limit_notice`, show a concise banner: "Response truncated at governance limit (X tokens). Rationale: <rationale>." Offer a button to "Request continuation" (disabled until feature implemented).
+- Provide a tooltip or help icon linking to this README section for clarity.
+
+### API Contract (StreamingDeltaChunk Additions)
+```
+interface StreamingDeltaChunk {
+	delta?: string;
+	tokens?: number;      // surrogate count
+	limit?: number;       // enforced limit
+	rationale?: string;   // explanation
+	event?: 'limit_info' | 'limit_notice' | string;
+	truncated?: boolean;  // final object if truncated
+}
+```
+
+If you build tooling consuming the stream, treat unknown `event` values as forward‑compatible signals and ignore if unrecognized.
+
+### Failure & Edge Handling
+- If the heuristic throws, the system silently falls back to legacy env cap or unlimited (with a logged warning) to avoid breaking UX.
+- If legacy `AZURE_STREAM_MAX_TOKENS` is set lower than heuristic result, a parenthetical note `(legacy cap override)` is appended to the rationale for transparency.
+
+### Auditing
+Future: Limit decisions (prompt length, keywords, chosen cap) can be appended to provenance JSONL with a sanitized prompt hash rather than raw text to preserve privacy while enabling aggregate analysis of truncation fairness.
+
+---
+## Accurate Token Counting
+
+### Resolution Order
+1. Attempt dynamic load of `@dqbd/tiktoken` (if installed).  
+2. If unavailable or disabled (`TOKENIZER_DISABLED=1`), fall back to a naive splitter (whitespace + punctuation segmentation).  
+3. Streaming path recalculates token count from the full accumulated text each delta; when real tokenizer is absent the count is approximate.  
+4. Once the real tokenizer loads asynchronously, subsequent chunks use the accurate encoder (no retroactive recomputation of earlier counts).
+
+### Environment Variables
+| Variable | Purpose |
+|----------|---------|
+| `TOKENIZER_DISABLED` | Force naive counting even if tokenizer library is present. |
+
+### Caveats
+Naive counting may diverge from billing tokens (especially with multi-byte or BPE merges). The governance limit should therefore be considered a *semantic budget* until the real tokenizer is active.
+
+## Continuation Streaming UX
+
+When a stream truncates due to a limit policy, the `limit_notice` chunk contains `continuationId`. Clients can call `agent.continueStream({ continuationId, extraDirective })` to resume generation with context (tail of prior output plus original prompt). A new `limit_info` event begins the continuation stream (it may pick a different limit based on updated prompt context).
+
+### Continuation Constraints
+| Env | Purpose | Default |
+|-----|---------|---------|
+| `CONTINUATION_TTL_MS` | Time a continuation remains valid. | 900000 (15 min) |
+| `CONTINUATION_MAX` | Max stored continuation contexts (oldest evicted). | 200 |
+
+Expired continuation IDs throw `Continuation expired`.
+
+### UI Guidance
+- Offer a "Continue" button immediately on `limit_notice`.
+- Optionally prompt user for an additional directive (e.g., "focus on examples").
+- Display a chain indicator (e.g., “(2/3 continuation)” if multiple truncations occur).
+
+## Provenance Fields (Extended Glossary)
+| Field | Meaning |
+|-------|---------|
+| `limit` | Applied streaming token limit for the invocation. |
+| `limitRationale` | Human-readable reason heuristic produced. |
+| `truncated` | Boolean, true if the final result was cut early by policy. |
+| `continuationOf` | If present, provenance ID of the prior truncated invocation this one continues. (Reserved for future wiring). |
+
+These additions enable aggregate fairness analysis without logging raw prompts (only hashed via `promptHash`).
+
+---
 Missing any required class or length threshold fails the preview job before artifact publication.
 
 ### Signed Report

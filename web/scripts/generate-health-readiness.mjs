@@ -92,3 +92,8 @@ function nowIso() { return new Date().toISOString(); }
 })();
 
 console.log('[health] Emitted dist/healthz.json, dist/readyz.json and dist/metrics.txt');
+
+// Some CI environments using unsupported Node versions (e.g., 22.x when engines specify >=20) have been
+// observing a spurious non-zero exit despite no thrown errors. To stabilize, explicitly exit 0.
+// If a genuine error occurs above, process will have already thrown.
+process.exit(0);

@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import '@testing-library/jest-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
+import { axe } from 'jest-axe'
 import PreLogoSequence from './PreLogoSequence'
 
 // Mock analytics trackEvent to capture calls
@@ -10,52 +12,56 @@ vi.mock('../analytics', () => {
 });
 import { trackEvent } from '../analytics'
 
-// Advance timers utility
-function advance(ms: number) {
-  act(() => { vi.advanceTimersByTime(ms) })
-}
 
 describe('PreLogoSequence', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  it('progresses through stages and calls onComplete after CTA click', () => {
+  it('shows single prompt and completes on CTA click', () => {
+    vi.useFakeTimers()
     const handleComplete = vi.fn()
     render(<PreLogoSequence onComplete={handleComplete} />)
-
-    // initial stage present
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByText(/What if defining consciousness/i)).toBeInTheDocument()
-
-  // fast-forward first stage (~6.4s)
-  advance(6500)
-    expect(screen.getByText(/What if AGI emerges/i)).toBeInTheDocument()
-
-  advance(6500)
-    expect(screen.getByText(/What if data governance/i)).toBeInTheDocument()
-
-  // Jump to CTA by advancing enough total time for remaining stages
-  advance(6500 * 3)
-    expect(screen.getByText(/Ready to convene/i)).toBeInTheDocument()
-
-    const enterBtn = screen.getByRole('button', { name: /Enter/i })
-    enterBtn.click()
-    // allow fade wait
-    advance(600)
+    expect(screen.getByText(/What do we need to understand, to shape the future we want\?/i)).toBeInTheDocument()
+  const enterBtn = screen.getByRole('button', { name: /Answer with us/i })
+    act(() => {
+      enterBtn.click()
+      vi.advanceTimersByTime(600)
+    })
+    vi.useRealTimers()
     expect(handleComplete).toHaveBeenCalledTimes(1)
-
-    // Verify telemetry events
     const calls = (trackEvent as unknown as ReturnType<typeof vi.fn>).mock.calls
     const actions = calls.map(c => c[0].action)
     expect(actions).toContain('intro_impression')
-    expect(actions).toContain('intro_stage_view')
     expect(actions).toContain('intro_completed')
+    // stage_view no longer emitted in single prompt mode
   })
+
+  it('exposes accessible dialog semantics and labels', () => {
+    const handleComplete = vi.fn()
+    render(<PreLogoSequence onComplete={handleComplete} />)
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+    // Ensure heading serves as accessible name source
+    const heading = screen.getByRole('heading', { name: /what do we need to understand/i })
+    expect(heading).toBeInTheDocument()
+    const cta = screen.getByRole('button', { name: /answer with us/i })
+    expect(cta).toBeInTheDocument()
+  })
+
+  it('matches initial render snapshot', () => {
+    const { container } = render(<PreLogoSequence onComplete={() => {}} />)
+    // Strip dynamic attributes if any in future (placeholder for stability)
+    expect(container.firstChild).toMatchSnapshot()
+  })
+
+  it('has no basic axe-core violations', async () => {
+    // Use real timers to avoid jsdom + fake timer interaction delaying MutationObserver flushes
+    const { container } = render(<PreLogoSequence onComplete={() => {}} />)
+    const root = container.querySelector('[role="dialog"]') as HTMLElement
+    const results = await axe(root || container, { rules: { 'color-contrast': { enabled: false } } })
+    expect(results).toHaveNoViolations()
+  }, 15000)
 
 })

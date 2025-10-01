@@ -2,10 +2,54 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+// Early performance harness (captures paint & LCP before lazy loads)
+import './perf/startupHarness'
+import React from 'react'
+import ChunkLoadBoundary from './components/ChunkLoadBoundary'
+// Convert secondary pages to lazy-loaded chunks for future dashboard panel expansion
+const LearnMore = React.lazy(() => import('./pages/LearnMore'))
+const Explore = React.lazy(() => import('./pages/Explore'))
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { initAnalyticsSession, trackHeroPaint, trackHashNavigation, trackEvent, hasAnalyticsConsent, initSectionObserver, startHeartbeat, initVisibilityListeners, installErrorHooks, flushPreConsentQueue, registerUnloadFlush, configureAnalyticsTransport, initFirstInputDelayCapture, initLayoutShiftObserver } from './analytics'
-import { initAppInsights, registerVitalsStarter } from './appInsights'
+// Application Insights is now lazy-loaded to reduce initial bundle size
+type InitAppInsightsFn = (opts?: { instrumentationKey?: string; connectionString?: string; samplingPercentage?: number }) => void;
+type RegisterVitalsStarterFn = (cb: () => void) => void;
+let _initAppInsights: InitAppInsightsFn | null = null;
+let _registerVitalsStarter: RegisterVitalsStarterFn | null = null;
+async function ensureAppInsights() {
+  if (_initAppInsights && _registerVitalsStarter) return;
+  const mod = await import('./appInsights');
+  _initAppInsights = mod.initAppInsights;
+  _registerVitalsStarter = mod.registerVitalsStarter;
+}
 import { startVitals } from './vitals'
 import SW_CONFIG from './sw-config'
+import { APP_VERSION } from './generated/appVersion'
+
+declare global {
+  interface Window { __BUILD_REV?: string; __LOGO_HASH?: string }
+}
+
+// Expose build revision + logo hash early and optionally render overlay when ?rev=1
+try {
+  const buildRev = (APP_VERSION as Record<string, unknown>).buildRev as string | undefined;
+  const logoHash = (APP_VERSION as Record<string, unknown>).logoHash as string | undefined;
+  if (buildRev) window.__BUILD_REV = buildRev;
+  if (logoHash) window.__LOGO_HASH = logoHash;
+  const printed = sessionStorage.getItem('rev:printed');
+  if (!printed) {
+    // Single concise console banner
+    // eslint-disable-next-line no-console
+    console.log(`%cBuild ${buildRev || 'n/a'} (logo ${logoHash || 'n/a'})`, 'background:#0a2736;color:#8cf;padding:2px 6px;border-radius:4px');
+    sessionStorage.setItem('rev:printed','1');
+  }
+  if (new URLSearchParams(location.search).get('rev') === '1') {
+    const tag = document.createElement('div');
+    tag.textContent = `${buildRev || 'n/a'} • logo ${logoHash || 'n/a'}`;
+    tag.style.cssText = 'position:fixed;bottom:8px;right:8px;font:11px system-ui;padding:4px 8px;background:rgba(0,0,0,0.55);color:#9fe6ff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;z-index:9999;pointer-events:none';
+    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(tag));
+  }
+} catch { /* ignore */ }
 
 // Attempt to eagerly load generated version info (in dev it exists after version:gen; in prod built into dist)
 async function attachGeneratedVersion() {
@@ -34,35 +78,61 @@ attachGeneratedVersion()
 // Application Insights (if key provided) - initialize before custom analytics to allow route tracking
 interface EnvMeta { VITE_APPINSIGHTS_KEY?: string }
 const aiKey = (import.meta as unknown as { env: EnvMeta }).env.VITE_APPINSIGHTS_KEY;
-if (aiKey) {
-  initAppInsights({ instrumentationKey: aiKey, samplingPercentage: 50 });
-  // Lightweight dependency correlation: wrap global fetch when AI enabled
-  try {
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      const start = performance.now();
-      const urlStr = typeof input === 'string' ? input : (input as Request).url;
-      const method = init?.method || (typeof input !== 'string' && (input as Request).method) || 'GET';
-      // Simple 16 byte hex trace id
-      const traceId = Array.from(crypto.getRandomValues(new Uint8Array(8)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-      const mergedInit: RequestInit = { ...(init || {}) };
-      mergedInit.headers = new Headers((init && init.headers) || (typeof input !== 'string' && (input as Request).headers) || undefined);
-      (mergedInit.headers as Headers).set('x-trace-id', traceId);
+// Lazy initialization strategy: idle or first interaction
+function scheduleAppInsightsInit() {
+  if (!aiKey) return;
+  let initialized = false;
+  const initNow = async () => {
+    if (initialized) return; initialized = true;
+    try {
+      await ensureAppInsights();
+      _initAppInsights?.({ instrumentationKey: aiKey, samplingPercentage: 50 });
+      // Wrap fetch for dependency telemetry
       try {
-        const res = await originalFetch(input as RequestInfo, mergedInit);
-        const duration = performance.now() - start;
-        // Defer import to avoid cyclic load
-        import('./appInsights').then(m => m.trackAiEvent('fetch_dependency', { url: urlStr, method, status: res.status, duration: Math.round(duration), traceId })).catch(()=>{});
-        return res;
-      } catch (err) {
-        const duration = performance.now() - start;
-        import('./appInsights').then(m => m.trackAiEvent('fetch_dependency', { url: urlStr, method, error: (err as Error).message, duration: Math.round(duration), traceId })).catch(()=>{});
-        throw err;
+        const originalFetch = window.fetch.bind(window);
+        window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+          const start = performance.now();
+          const urlStr = typeof input === 'string' ? input : (input as Request).url;
+          const method = init?.method || (typeof input !== 'string' && (input as Request).method) || 'GET';
+          const traceId = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2,'0')).join('');
+          const mergedInit: RequestInit = { ...(init || {}) };
+          mergedInit.headers = new Headers((init && init.headers) || (typeof input !== 'string' && (input as Request).headers) || undefined);
+          (mergedInit.headers as Headers).set('x-trace-id', traceId);
+          try {
+            const res = await originalFetch(input as RequestInfo, mergedInit);
+            const duration = performance.now() - start;
+            import('./appInsights').then(m => m.trackAiEvent('fetch_dependency', { url: urlStr, method, status: res.status, duration: Math.round(duration), traceId })).catch(()=>{});
+            return res;
+          } catch (err) {
+            const duration = performance.now() - start;
+            import('./appInsights').then(m => m.trackAiEvent('fetch_dependency', { url: urlStr, method, error: (err as Error).message, duration: Math.round(duration), traceId })).catch(()=>{});
+            throw err;
+          }
+        };
+      } catch { /* ignore */ }
+      // Start vitals only after AI ready (if not disabled)
+      if (import.meta.env.VITE_DISABLE_VITALS !== 'true') {
+        _registerVitalsStarter?.(() => startVitals());
       }
-    };
-  } catch { /* ignore */ }
+    } catch { /* ignore */ }
+  };
+  if ('requestIdleCallback' in window) {
+    (window as typeof window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback?.(initNow, { timeout: 3000 });
+  } else {
+    setTimeout(initNow, 1500);
+  }
+  // First user interaction triggers immediate init
+  const early = () => { initNow(); removeListeners(); };
+  function removeListeners() {
+    window.removeEventListener('pointerdown', early);
+    window.removeEventListener('keydown', early);
+    window.removeEventListener('scroll', early);
+  }
+  window.addEventListener('pointerdown', early, { once: true });
+  window.addEventListener('keydown', early, { once: true });
+  window.addEventListener('scroll', early, { once: true });
 }
+scheduleAppInsightsInit();
 
 // Analytics initialization
 initAnalyticsSession()
@@ -79,9 +149,7 @@ if (import.meta.env.VITE_ANALYTICS_ENDPOINT) {
 initFirstInputDelayCapture();
 initLayoutShiftObserver();
 // optional feature flag to disable vitals collection entirely (privacy mode / perf testing isolation)
-if (import.meta.env.VITE_DISABLE_VITALS !== 'true') {
-  registerVitalsStarter(() => startVitals());
-}
+// Vitals now start after lazy AI init so base bundle omits web-vitals until necessary.
 
 // Track initial hash (if present)
 if (location.hash) {
@@ -116,9 +184,27 @@ if (hasAnalyticsConsent()) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ChunkLoadBoundary label="Loading page">
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/learn-more" element={<LearnMore />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/convene" element={<Explore />} />
+        </Routes>
+      </ChunkLoadBoundary>
+    </BrowserRouter>
   </StrictMode>,
 )
+
+// Mark hydration after next paint to approximate interactive readiness
+try {
+  requestAnimationFrame(() => {
+    if (typeof window.__markHydration === 'function') {
+      window.__markHydration();
+    }
+  });
+} catch { /* ignore */ }
 
 // Dev helper & observability meta tag (non-sensitive config only)
 try {
@@ -172,9 +258,47 @@ try {
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(async reg => {
+      // If an updated worker is already waiting, prompt reload (silent auto-refresh for now)
+      if (reg.waiting) {
+        // eslint-disable-next-line no-console
+        console.info('[sw] update waiting – auto refreshing');
+        reg.waiting.postMessage('force-reload');
+        setTimeout(() => location.reload(), 400);
+      } else {
+        reg.addEventListener('updatefound', () => {
+          const installing = reg.installing;
+          installing?.addEventListener('statechange', () => {
+            if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+              // New content available, reload to apply
+              // eslint-disable-next-line no-console
+              console.info('[sw] new version installed – refreshing to apply');
+              setTimeout(() => location.reload(), 300);
+            }
+          });
+        });
+      }
       // Helper for manual debug in console: window.__forceSWUpdate()
       interface DebugWindow extends Window { __forceSWUpdate?: () => void }
       (window as DebugWindow).__forceSWUpdate = () => reg.active?.postMessage('refresh-precache');
+      // Design drift detection: compare stored logo hash with current and show toast if changed (first load after update)
+      try {
+        const LOGO_HASH_KEY = 'logo:hash';
+        const prev = localStorage.getItem(LOGO_HASH_KEY);
+        const currentLogoHash = window.__LOGO_HASH;
+        if (currentLogoHash && prev && prev !== currentLogoHash) {
+          // Inject toast
+          const toast = document.createElement('div');
+          toast.innerHTML = '<strong style="font-weight:600">New design available</strong><div style="margin-top:4px;font-weight:400">Logo updated – <button type="button" style="all:unset;cursor:pointer;color:#7bdcff;text-decoration:underline">reload</button></div>';
+          toast.style.cssText = 'position:fixed;top:12px;right:12px;z-index:10000;background:#0b2230;color:#c8f3ff;font:12px system-ui;padding:10px 14px;border:1px solid #134d63;border-radius:8px;box-shadow:0 6px 22px -6px rgba(0,0,0,0.45);max-width:220px;line-height:1.35';
+          document.body.appendChild(toast);
+          const btn = toast.querySelector('button');
+          const reload = () => location.reload();
+          btn?.addEventListener('click', reload);
+          // Auto-dismiss after 15s if user ignores
+          setTimeout(() => toast.remove(), 15000);
+        }
+        if (currentLogoHash) localStorage.setItem(LOGO_HASH_KEY, currentLogoHash);
+      } catch { /* ignore */ }
       // Periodic background sync registration (if supported & permission granted)
       try {
         type PeriodicPermissionState = 'granted' | 'denied' | 'prompt';

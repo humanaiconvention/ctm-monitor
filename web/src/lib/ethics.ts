@@ -59,7 +59,7 @@ export interface EvaluateOptions {
 /** Compute review level from cumulative score */
 function levelFromScore(score: number): ReviewLevel {
   if (score >= 5) return 'full';
-  if (score >= 3) return 'light';
+  if (score >= 2) return 'light';
   return 'auto';
 }
 

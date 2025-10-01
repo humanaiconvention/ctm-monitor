@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -22,12 +23,29 @@ const commit = process.env.GITHUB_SHA || safe('git rev-parse --short=12 HEAD') |
 const fullCommit = process.env.GITHUB_SHA || safe('git rev-parse HEAD') || 'unknown'
 
 // Note: buildTime intentionally excluded from content hashed region to ensure reproducible index.html.
+// Compute a stable content hash for the logo component to detect design drift between builds.
+let logoHash = 'unknown';
+try {
+  const logoPath = join(root, 'src', 'components', 'LogoHumanAI.tsx');
+  const logoSrc = readFileSync(logoPath, 'utf8');
+  logoHash = createHash('sha256').update(logoSrc).digest('hex').slice(0, 16);
+} catch { /* ignore */ }
+
+// Build revision: version + short commit + date (YYYYMMDD) for human readability.
+const now = new Date();
+const y = now.getUTCFullYear();
+const m = String(now.getUTCMonth()+1).padStart(2,'0');
+const d = String(now.getUTCDate()).padStart(2,'0');
+const buildRev = `${version}+${commit}.${y}${m}${d}`;
+
 const data = {
   name: pkg.name,
   version,
   commit,
   fullCommit,
-}
+  buildRev,
+  logoHash,
+};
 
 const publicDir = join(root, 'public')
 mkdirSync(publicDir, { recursive: true })

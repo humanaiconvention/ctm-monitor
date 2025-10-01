@@ -22,6 +22,10 @@ This package (`web/`) is the front-end for HumanAI Convention. It is built with 
 * [CSP Generation](#environment-specific-csp-generation)
 * [Chunk Load Boundary](#chunk-load-boundary)
 * [Owner Login (Single User Auth)](#owner-login-single-user-auth)
+* [Session Rotation & Binding](#session-rotation--binding)
+* [Accessibility & Automated A11y](#accessibility--automated-a11y)
+* [Visual Regression & Storybook](#visual-regression--storybook)
+* [Custom Type Augmentation (jest-axe + Vitest)](#custom-type-augmentation-jest-axe--vitest)
 
 ## Taglines
 Primary (hero): We will know — together.  
@@ -140,6 +144,60 @@ Lightweight cryptographically signed login for the sole owner (Option 1). Replac
 * Track token jti (ID) to revoke replay if you later store a blacklist.
 * Rotate `SESSION_SIGNING_SECRET` via dual-secret grace period.
 
+## Session Rotation & Binding
+
+The session system supports fast, global invalidation (epoch rotation) and optional lightweight context binding (user‑agent hash + short IP prefix). These controls are intentionally minimal—no DB, no stateful token store—yet provide practical defense-in-depth against stale or replayed bearer tokens.
+
+### Epoch Rotation
+An integer epoch is stored at `web/.auth/session-epoch.json`:
+```jsonc
+{ "epoch": 3 }
+```
+Every issued session token includes `ep=<currentEpoch>`. Validation rejects tokens where `ep !== currentEpoch` (unless legacy tokens without the `ep` claim are encountered—those are treated as epoch 0).
+
+Rotate (invalidate all active sessions) with:
+```bash
+node web/scripts/rotate-session.mjs
+```
+This increments the epoch file atomically. All existing session cookies immediately fail validation; you must generate a new login link to establish a fresh session.
+
+Use cases:
+* Lost/stolen device suspected.
+* Accidentally exposed session cookie in logs or screenshots.
+* Periodic hygiene (e.g. monthly rotation) without changing the HMAC secret.
+
+### UA + IP Binding
+When a session is issued the server records:
+* `ua`: A non‑cryptographic hash of the `User-Agent` string (stabilizes across token length while changing on major agent shifts).
+* `ip`: The remote IP (validation compares only the first 3 octets – /24 style network prefix for IPv4; IPv6 binding is currently a no‑op beyond raw string prefix splitting).
+
+Validation steps (in order):
+1. Token signature + expiry.
+2. Purpose must be `owner-session`.
+3. Epoch equality (if token had `ep`).
+4. UA hash equality (if token had `ua`).
+5. Network prefix equality (if token had `ip`).
+
+If any bound attribute mismatches, the server responds unauthenticated and the frontend hook clears privileged UI. Older tokens created prior to adding these claims simply omit them; validation skips missing attributes for backward compatibility.
+
+### Caveats
+* IP prefix binding can cause logouts when moving between networks (home → mobile hotspot). If this becomes disruptive you can remove or relax the prefix logic in `scripts/session-util.mjs`.
+* User-Agent spoofing remains trivial; the hash is a low-friction heuristic, not a fingerprinting attempt.
+* Epoch file should be part of your backup ignores; it is ephemeral operational state. Do not commit rotations unless intentionally versioning state.
+* Rotation does not change cryptographic strength—keep `SESSION_SIGNING_SECRET` long and random (≥32 bytes raw / 64 hex chars recommended).
+
+### Frontend Surfacing
+The `AuthBanner` component (fixed top-right) shows the authenticated email and a logout link when a valid session is active. Minimal footprint (<0.3 KB gz) and intentionally absent when unauthenticated or still loading to avoid layout shift.
+
+### Testing Guidance
+`useSession.rotation.test.tsx` simulates epoch rotation and UA/IP mismatch by sequencing mock `/session` responses. Integration/E2E tests can trigger `rotate-session.mjs` between authenticated actions to assert forced logout behavior.
+
+### Operational Tips
+* Automate scheduled rotation via a cron or CI job calling the script on a cadence appropriate for your threat model.
+* After rotation, immediately attempt an authenticated action in an older tab to confirm invalidation.
+* For secret rotation: first rotate epoch (flush active sessions), then deploy with new secret. Optionally support dual-secret verify during the switchover window if you later extend the utility.
+
+
 ### Frontend Usage
 The existing `PasswordGate` requires no changes—once session cookie is valid it renders children directly. To detect auth state elsewhere:
 ```ts
@@ -158,6 +216,107 @@ node scripts/generate-password-hash.mjs "your password"
 ```
 
 Security note: This is a UX gate—NOT cryptographic protection. Do not rely on it for safeguarding sensitive data; all bundle assets remain publicly fetchable if deployed. Suitable only for light preview friction.
+
+## Accessibility & Automated A11y
+
+We combine manual semantics enforcement with automated checks:
+
+| Layer | Tooling / Technique | Purpose |
+|-------|---------------------|---------|
+| Unit (jsdom) | `jest-axe` via Vitest | Fast feedback on common WCAG issues for isolated components |
+| E2E | Playwright + `@axe-core/playwright` | Page-level / real rendering context issues not surfaced in jsdom |
+| Manual patterns | Proper landmark roles, focus management, accessible names | Prevent whole categories of violations from emerging |
+
+### Current Coverage
+`PreLogoSequence` has: dialog semantics (`role="dialog"`, `aria-modal`, `aria-labelledby`), button labeling, live-region containment minimized.
+
+### Adding A11y Tests (Unit)
+1. Import the component and render with Testing Library.
+2. Query the smallest relevant subtree (e.g. dialog element) instead of the entire `container` to reduce axe runtime.
+3. Run `axe(subtree, { rules: { 'color-contrast': { enabled: false } } })` for speed / to avoid false positives in jsdom.
+
+### Playwright A11y Sweep
+Use `npm run test:a11y` to execute the axe sweep on full pages (contrast enabled there). Failures should prefer code fixes over rule disabling. If you must disable a rule, document the rationale in a comment referencing the WCAG criterion.
+
+### Accessible Names & Dialogs
+After integrating axe we added `aria-labelledby` to the intro dialog because `role="dialog"` without an accessible name triggers `aria-dialog-name`. Future dialogs should follow the same pattern (or provide `aria-label`).
+
+### Performance Tips
+* Scope axe to smallest subtree.
+* Disable only rules that are noisy in jsdom (e.g. `color-contrast`). Keep the full rule set in Playwright.
+* Keep fake timers away from axe runs (use real timers) to avoid MutationObserver sync issues.
+
+## Visual Regression & Storybook
+
+Storybook + Chromatic establish the visual baseline for component states.
+
+| Command | Action |
+|---------|--------|
+| `npm run storybook` | Local Storybook dev (webpack5 builder) |
+| `npm run build:storybook` | Static Storybook build (outputs `storybook-static/`) |
+| `npm run chromatic` | Publish build to Chromatic (requires `CHROMATIC_PROJECT_TOKEN`) |
+| `npm run test:visual` | Playwright visual snapshots (component/page level) |
+
+### Workflow
+1. Create or update a story (e.g. `src/components/PreLogoSequence.stories.tsx`).
+2. Run `npm run storybook` and verify the component states.
+3. Commit. In CI (or locally with token) run `npm run chromatic` to upload and diff.
+4. For interactions not easily expressed in static stories, add a Playwright visual test. Use `npm run test:visual` to update snapshots (`PLAYWRIGHT_UPDATE_SNAPSHOTS=1` for intentional changes).
+
+### Choosing Between Approaches
+| Scenario | Prefer |
+|----------|-------|
+| Pure presentational component variants | Chromatic story |
+| State transitions / animations requiring scripting | Playwright visual test |
+| Layout regressions spanning composed components | Playwright page snapshot |
+
+### Snapshot Hygiene
+Small, focused snapshots minimize churn. Avoid snapshotting entire pages unless you specifically want a layout diff. Revisit and prune unused stories periodically to keep build times low.
+
+## Custom Type Augmentation (jest-axe + Vitest)
+
+We added custom matcher + module declarations to integrate `jest-axe` cleanly with Vitest.
+
+### Why a Custom Declaration?
+`jest-axe` exports Jest matchers; Vitest is Jest-compatible but its type surface differs. We provide ambient declarations so TypeScript recognizes `toHaveNoViolations()` on Vitest's `expect`.
+
+### Structure
+`src/types/global.d.ts` contains:
+* Ambient module for `jest-axe` (axe function + config signature)
+* Matcher augmentation for `vitest` namespace
+
+An additional minimal ambient module file `src/types/ambient-jest-axe.d.ts` exists to bypass package `exports` resolution quirks; these can be merged later if the upstream package alters typings.
+
+### tsconfig Strategy
+`tsconfig.app.json` sets:
+```jsonc
+{
+  "compilerOptions": {
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "types": ["vite/client"]
+  }
+}
+```
+This ensures our ambient declarations are discovered without needing per-test reference directives.
+
+### Matcher Registration
+`vitest.setup.ts` imports `toHaveNoViolations` and calls `expect.extend(toHaveNoViolations as any)` (jest-axe already returns the shape expected by Jest’s extend system). The cast suppresses minor signature divergences.
+
+### Adding More Custom Matchers
+1. Create or update an ambient declaration file under `src/types`.
+2. Extend `expect` in `vitest.setup.ts`.
+3. Keep declarations narrowly scoped—avoid polluting the global namespace with unrelated helpers.
+
+### Troubleshooting
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| `Property 'toHaveNoViolations' does not exist on type 'Assertion'` | Declaration file not picked up | Ensure file is inside `src/types` and `typeRoots` includes it. |
+| `expectAssertion.call is not a function` | Incorrect matcher extension object | Pass matcher object directly (not wrapped) to `expect.extend`. |
+| Axe test timeouts | Fake timers interfering or scanning too large a subtree | Use real timers; narrow the Node passed to `axe()`. |
+
+### Future Simplification
+If `jest-axe` publishes Vitest-aware types, we can delete the ambient declarations and the workaround file, retaining only matcher registration.
+
 
 ### Developer: Testing & `testConfig` Override
 
