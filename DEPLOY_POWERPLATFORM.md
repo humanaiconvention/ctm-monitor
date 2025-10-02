@@ -2,6 +2,9 @@
 
 This guide walks through connecting and deploying the HumanAI Convention web application to Microsoft Power Platform's Power Pages environment.
 
+> **🚀 Quick Start**: For a condensed setup guide, see [`docs/QUICKSTART_POWERPLATFORM.md`](docs/QUICKSTART_POWERPLATFORM.md)  
+> **🔐 GitHub Secrets**: For automated deployment setup, see [`docs/GITHUB_SECRETS_POWERPLATFORM.md`](docs/GITHUB_SECRETS_POWERPLATFORM.md)
+
 ## Overview
 
 Power Pages (formerly Power Apps Portals) is Microsoft's low-code platform for building external-facing websites. This deployment option is ideal when you need integration with Dynamics 365, Dataverse, or other Power Platform services.
