@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { configureAnalyticsTransport, setAnalyticsConsent, trackEvent, __test } from './analytics';
+import { configureAnalyticsTransport, setAnalyticsConsent, trackEvent } from './analytics';
+import { flushAnalytics, resetBreaker, forceHalfOpen, getBreakerState } from './test-utils/analytics';
 
 // JSDOM lacks some APIs; stub minimal ones used in analytics
 // Provide a minimal now() polyfill if performance is missing (older JSDOM)
@@ -24,7 +25,7 @@ function mockFetchSequence(statuses: number[]) {
 
 describe('analytics transport circuit breaker', () => {
   beforeEach(() => {
-    __test._resetBreaker();
+    resetBreaker();
     setAnalyticsConsent(true); // allow dispatch
     configureAnalyticsTransport({ enabled: true, endpoint: '/analytics-test', maxRetries: 0, circuitBreakerThreshold: 3, retryBaseDelayMs: 1 });
   });
@@ -35,26 +36,23 @@ describe('analytics transport circuit breaker', () => {
     // Trigger events and force flushes; wait for async network attempts each loop
     for (let i = 0; i < 3; i++) {
       trackEvent({ category: 'navigation', action: 'page_view', label: `fail_${i}` });
-      __test._forceFlush();
-      await __test._drain();
+      await flushAnalytics();
     }
 
     // After 3 failures breaker should open
-    let breaker1 = __test._getBreaker();
-    expect(breaker1.consecutiveFailures).toBeGreaterThanOrEqual(3);
-    expect(breaker1.breakerOpen).toBe(true);
+  let breaker1 = getBreakerState() as { consecutiveFailures?: number; breakerOpen?: boolean };
+  expect(breaker1.consecutiveFailures).toBeGreaterThanOrEqual(3);
+  expect(breaker1.breakerOpen).toBe(true);
 
   // Force half-open attempt without waiting real cooldown (helper only exists in test build)
-  interface TestHelpers { _forceHalfOpen?: () => void }
-  ( __test as unknown as TestHelpers )._forceHalfOpen?.();
+  forceHalfOpen();
 
   // Add one more event to trigger half-open attempt which should succeed (200) and reset breaker
     trackEvent({ category: 'navigation', action: 'page_view', label: 'recover' });
-    __test._forceFlush();
-    await __test._drain();
+  await flushAnalytics();
 
-    breaker1 = __test._getBreaker();
-    expect(breaker1.breakerOpen).toBe(false);
-    expect(breaker1.consecutiveFailures).toBe(0);
+  breaker1 = getBreakerState() as { consecutiveFailures?: number; breakerOpen?: boolean };
+  expect(breaker1.breakerOpen).toBe(false);
+  expect(breaker1.consecutiveFailures).toBe(0);
   });
 });

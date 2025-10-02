@@ -25,9 +25,15 @@ export const ChunkLoadBoundary: React.FC<ChunkLoadBoundaryProps> = ({
   busyWrapper = true,
 }) => {
   const defaultFallback = (
-    <div className="chunk-boundary__fallback" role="status" aria-live="polite" aria-label={label}>
+    <div
+      className="chunk-boundary__fallback"
+      role="status"
+      aria-live="polite"
+      aria-label={label}
+      style={{ color: 'rgba(240,245,255,0.95)' }}
+    >
       <div className="chunk-boundary__pulse" />
-      <span className="chunk-boundary__text">{label}…</span>
+      <span className="chunk-boundary__text" style={{ color: 'rgba(240,245,255,0.95)' }}>{label}…</span>
     </div>
   );
   return (

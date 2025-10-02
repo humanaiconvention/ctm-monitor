@@ -1,38 +1,62 @@
-import '../App.css';
-
-// Reuse pillars definition (could extract to shared module later)
-const pillars = [
-  {
-    title: 'Ethical Infrastructure',
-    description: 'Scalable and replicable protocols for useful, transparent, accountable AI systems.'
-  },
-  {
-    title: 'Participatory Data',
-    description: 'Human-centered data practices rooted in informed, bounded consent and deliberative engagement (inspired by the Danish model) scaled to enable statistically significant, ethically grounded AI systems designed to benefit humanity.'
-  },
-  {
-    title: 'Science- and Culture- informed Research',
-    description: 'Responsible data practices and methodologies that maximize engagement for mutual benefit, with long-term individual and collective human safety at the root.'
-  }
-];
+import { useEffect } from 'react'
+import '../App.css'
+import { trackEvent } from '../analytics'
+import { PILLARS } from '../config/pillars'
 
 export default function LearnMore() {
+  // Fire a lightweight analytics pageview (distinct from router-level instrumentation)
+  useEffect(() => {
+    trackEvent({ category: 'navigation', action: 'page_view', label: 'learn_more' })
+  }, [])
+
+  // Minimal SEO/meta augmentation (idempotent)
+  useEffect(() => {
+    const title = 'Learn More – HumanAI Convention'
+    document.title = title
+    const ensure = (attr: 'name' | 'property', key: string, content: string) => {
+      let el = document.querySelector(`[${attr}="${key}"]`) as HTMLMetaElement | null
+      if (!el) {
+        el = document.createElement('meta')
+        el.setAttribute(attr, key)
+        document.head.appendChild(el)
+      }
+      if (el.getAttribute('content') !== content) el.setAttribute('content', content)
+    }
+    ensure('name', 'description', 'Mission and vision of HumanAI Convention – building ethical, participatory infrastructure for collective intelligence.')
+    ensure('property', 'og:title', title)
+    ensure('property', 'og:description', 'Mission and vision of HumanAI Convention.')
+  }, [])
+
   return (
-    <div className="learn-page">
-      <header className="hero hero--lean">
+    <div className="learn-page" data-page="learn-more">
+      <a href="#mission-heading" className="skip-link">Skip to mission</a>
+      <a href="#vision-heading" className="skip-link">Skip to vision</a>
+      <header className="hero hero--lean" role="banner">
         <div className="hero__inner hero__inner--narrow">
+          <nav aria-label="Breadcrumb" className="breadcrumb">
+            <ol>
+              <li><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Home</a></li>
+              <li aria-current="page">Learn More</li>
+            </ol>
+          </nav>
           <h1>Learn More</h1>
           <p className="lede">Mission, vision, and the scaffolding we are building for collective intelligence.</p>
+          <nav aria-label="Section navigation" className="learn-subnav">
+            <ul>
+              <li><a href="#mission-heading">Mission</a></li>
+              <li><a href="#vision-heading">Vision</a></li>
+            </ul>
+          </nav>
         </div>
       </header>
-      <main className="learn-main">
+      <main className="learn-main" id="content">
         <section className="learn-block" aria-labelledby="mission-heading">
           <div className="learn-block__inner">
             <h2 id="mission-heading" className="learn-heading">Our mission</h2>
             <p className="learn-intro">Catalyzing beneficial artificial intelligence by ethically cultivating robust human data.</p>
-            <div className="pillars pillars--centered">
-              {pillars.map(p => (
-                <article key={p.title} className="pillar pillar--elevated">
+            <div className="pillars pillars--centered" role="list" aria-label="Mission pillars">
+              {PILLARS.map(p => (
+                <article key={p.title} className="pillar pillar--elevated" role="listitem">
                   <h3>{p.title}</h3>
                   <p>{p.description}</p>
                 </article>
@@ -59,6 +83,21 @@ export default function LearnMore() {
           </div>
         </section>
       </main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'HumanAI Convention',
+          url: typeof window !== 'undefined' ? window.location.origin : 'https://www.humanaiconvention.com',
+          description: 'Mission and vision of HumanAI Convention – building ethical, participatory infrastructure for collective intelligence.',
+          foundingDate: '2025',
+          sameAs: [
+            'https://github.com/humanaiconvention'
+          ],
+          mission: 'Catalyzing beneficial artificial intelligence by ethically cultivating robust human data.'
+        }) }}
+      />
     </div>
-  );
+  )
 }

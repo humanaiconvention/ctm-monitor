@@ -212,7 +212,7 @@ export default function QuoteSpotlight() {
 
   return (
     <section className="section section--quote-focus" id="voices" aria-label="Perspectives on consciousness">
-      <div className="quote-spotlight">
+  <div className="quote-spotlight" data-style-enhanced="1">
         <div className={`quote-spotlight__stage ${isCrossfading ? 'is-crossfading' : ''}`}>
           {previousQuote && (
             <article className="quote-spotlight__card quote-layer previous">

@@ -13,7 +13,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customEvents\n| where name == 'sw_config_drift'\n| extend previous = tostring(customDimensions.previous), current = tostring(customDimensions.current)\n| project TimeGenerated=timestamp, previous, current\n| order by TimeGenerated desc\n| take 50",
+  "query": "customEvents\n| where name == 'drift' and tostring(customDimensions.eventCategory) == 'config'\n| extend previous = tostring(customDimensions.previous), current = tostring(customDimensions.current), label=tostring(customDimensions.eventLabel)\n| project TimeGenerated=timestamp, label, previous, current\n| order by TimeGenerated desc\n| take 50",
         "size": 2,
         "title": "Recent Config Drift Events"
       }

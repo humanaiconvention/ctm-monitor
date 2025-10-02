@@ -20,6 +20,7 @@ Taglines may be reused or remixed under the project license with attribution, pr
 ![Attestation Freshness](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/humanaiconvention/humanaiconvention/badges/attestation-badge.json&logo=trust&label=attestation)
 ![Out-of-Band Verification](https://img.shields.io/github/actions/workflow/status/humanaiconvention/humanaiconvention/verify-latest-attestations.yml?label=verification%20oob&logo=github)
 ![Verification Health](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/humanaiconvention/humanaiconvention/badges/verification-badge.json&label=attestations&logo=trust)
+![E2E (Playwright)](https://img.shields.io/github/actions/workflow/status/humanaiconvention/humanaiconvention/e2e.yml?label=e2e%20tests&logo=playwright)
 
 Live URL (pending DNS propagation): https://www.humanaiconvention.com/
 
@@ -58,6 +59,17 @@ Common scripts (run from `web/`):
 | `npm run build` | Generate version file, typecheck via project references, build production bundle. |
 | `npm run lint` | ESLint over all source (React + TS). |
 | `npm run typecheck` | Strict TypeScript check with additional invariants (`noImplicitOverride`, `exactOptionalPropertyTypes`). |
+| `npm run test:e2e` | Builds app with drift harness enabled (env flag) then runs Playwright tests. |
+
+### Drift Harness & E2E Telemetry Capture (Dev Only)
+To simulate configuration drift during E2E runs a gated harness is exposed when `VITE_ENABLE_DRIFT_HARNESS=true` at build and runtime. It adds globals:
+
+* `window.__testMutatePreviewQuestionsConfig(patch)`
+* `window.__testMutateSwConfig(patch)`
+
+Both recompute a config hash, emit `config/drift` if changed, and refresh corresponding meta tags. The default CI E2E workflow sets the enabling env var. In production builds the harness code is tree-shaken (flag absent).
+
+For deeper assertions you can supply a mock analytics endpoint: run a tiny HTTP server capturing POST bodies, then start Playwright with `VITE_ANALYTICS_ENDPOINT=http://localhost:<port>/ingest` to assert received drift payloads. (Server not bundled—left to test harness scripts.)
 | `npm run format` | Apply Prettier formatting to repo files. |
 | `npm run format:check` | Verify formatting (CI friendly). |
 | `npm run verify` | Aggregate: lint + typecheck + build + security audit. Fails fast on any error. |
@@ -73,6 +85,7 @@ Routing is handled client‑side via `react-router-dom@6`:
 Routes:
 - `/` – Landing experience (hero, dynamic quotes, participation & coming soon sections).
 - `/learn-more` – Mission, Vision narrative, and pillars (Ethical Infrastructure, Participatory Data, Science- & Culture- informed Research).
+- `/preview` – Restored Preview Questions page: an ephemeral (non-persisted) question intake form logging locally + analytics (shapes upcoming FAQ and onboarding flow). Future: backend or email integration.
 
 The home hero includes a "Learn more" call‑to‑action that performs client navigation without a full reload. When adding new sections that warrant deeper explanation, prefer expanding the `/learn-more` page rather than bloating the landing screen; keep initial interaction fast and focused.
 
@@ -224,6 +237,36 @@ Environment Overrides:
 ```
 MIN_PERF_SCORE=92 MIN_ACC_SCORE=96 LIGHTHOUSE_ENFORCE_DATE=2025-10-20
 ```
+
+## Progressive Intro & Content Reveal
+To prevent initial layout flash and create a smoother perceived load, a two‑phase intro gating + reveal system is implemented.
+
+Classes & Attributes:
+- `intro-pending`: Added to `<body>` pre‑React if the dual preview intro has not yet been completed. While present, main structural regions (`.page`, `.hero`, `main`, `footer`) are `visibility:hidden`.
+- `reveal-ready`: Added when the intro finishes (or immediately if previously completed). Enables opacity/translate transitions on staged elements.
+- `no-attr-delay`: Feature‑detection fallback toggled when the browser does not support `attr()` inside `calc()` for `transition-delay`. Inline JS then assigns explicit `transitionDelay` values.
+- `[data-reveal]`: Marks an element as part of the progressive reveal choreography.
+- `data-reveal-order="<n>`: Integer sequence index. Stagger interval currently 60ms per step.
+
+Flow:
+1. Early script (`main.tsx` top) inspects `localStorage['hq:introComplete']` and sets `intro-pending` vs `reveal-ready`.
+2. User progresses through `PreviewIntroGate`; on completion `handleIntroComplete` sets the storage flag, swaps classes, and dispatches a custom `reveal:ready` event.
+3. CSS in `src/reveal.css` transitions each `[data-reveal]` from `opacity:0; translateY(12px)` to visible state with a stagger.
+4. Reduced motion users skip vertical translation (respecting `prefers-reduced-motion` media query).
+5. Unsupported `attr()` fallback: JS applies inline `transitionDelay` based on `data-reveal-order`.
+
+Customization knobs (future):
+- Change base stagger: adjust multiplier in `reveal.css` or inline JS fallback (60ms).
+- Global delay offset: add a `--reveal-delay` CSS variable on `body` or any container.
+- Disable reveal for diagnostics: manually add `reveal-ready` and remove `intro-pending` in dev tools, or set `localStorage['hq:introComplete']='true'` before reload.
+
+Testing:
+- `revealReady.test.tsx` ensures immediate `reveal-ready` application when intro previously completed.
+- Additional e2e tests could verify no layout shift spikes (CLS) by measuring bounding boxes pre/post reveal (placeholder).
+
+Telemetry Considerations:
+- The reveal is intentionally silent (no analytics events) to keep intro taxonomy lean; if sequencing metrics are later needed, instrument a single timing event referencing the total reveal duration instead of per‑element events.
+
 
 Artifacts: Raw Lighthouse reports are stored under `web/.lighthouseci` and uploaded as `lighthouse-gradual` artifact.
 
@@ -685,7 +728,7 @@ Frontend telemetry blends a privacy-conscious custom analytics layer with option
 Key Components:
 - Custom analytics queue (consent gated, sampling, batching, circuit breaker, LRU dedupe).
 - Web Vitals collection (LCP, INP, CLS, TTFB, FCP) → normalized `perf_metric` events (can disable).
-- Service Worker config drift + update strategy events (`sw_config_drift`, `sw_hard_bust_complete`, etc.).
+- Service Worker + Preview config drift events (`config/drift`), update strategy events (`sw_hard_bust_complete`, etc.).
 - Fetch dependency instrumentation (`fetch_dependency`) with duration + status + correlation trace id.
 - Azure Application Insights integration (connection string or key) with telemetry initializer adding `sessionId` and `buildCommit`.
 - Correlation header injection: `x-trace-id` per page load across all fetches.

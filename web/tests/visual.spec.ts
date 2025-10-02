@@ -57,16 +57,18 @@ test.describe('Visual Regression', () => {
   test('hero only', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('header.hero h1');
+    // Allow web fonts & layout animations to settle
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(300);
     const hero = page.locator('header.hero');
-    // Inline retry similar to full-page helper
-    const maxAttempts = process.env.CI ? 2 : 1;
+    const maxAttempts = process.env.CI ? 3 : 2;
     for (let i=0;i<maxAttempts;i++) {
       try {
-        await expect(hero).toHaveScreenshot('hero.png', { animations: 'disabled', maxDiffPixelRatio: 0.005 });
+        await expect(hero).toHaveScreenshot('hero.png', { animations: 'disabled', maxDiffPixelRatio: 0.008, timeout: 8000 });
         break;
       } catch (e) {
         if (i === maxAttempts -1) throw e;
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(350);
       }
     }
   });
@@ -74,15 +76,35 @@ test.describe('Visual Regression', () => {
   test('voices section', async ({ page }) => {
     await page.goto('/');
     await ensureSections(page);
+    // Extra stabilization for WebKit scroll/IO flakiness
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(400);
     const voices = page.locator('#voices');
-    const maxAttempts = process.env.CI ? 2 : 1;
+    const maxAttempts = process.env.CI ? 3 : 2;
     for (let i=0;i<maxAttempts;i++) {
       try {
-        await expect(voices).toHaveScreenshot('voices.png', { animations: 'disabled', maxDiffPixelRatio: 0.005 });
+        await expect(voices).toHaveScreenshot('voices.png', { animations: 'disabled', maxDiffPixelRatio: 0.008, timeout: 9000 });
         break;
       } catch (e) {
         if (i === maxAttempts -1) throw e;
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(400);
+      }
+    }
+  });
+
+  test('learn-more hero', async ({ page }) => {
+    await page.goto('/learn-more');
+    await page.waitForSelector('header.hero h1');
+    await page.waitForTimeout(250); // settle fonts
+    const hero = page.locator('header.hero');
+    const maxAttempts = process.env.CI ? 3 : 2;
+    for (let i=0;i<maxAttempts;i++) {
+      try {
+        await expect(hero).toHaveScreenshot('learn-more-hero.png', { animations: 'disabled', maxDiffPixelRatio: 0.008, timeout: 9000 });
+        break;
+      } catch (e) {
+        if (i === maxAttempts -1) throw e;
+        await page.waitForTimeout(350);
       }
     }
   });

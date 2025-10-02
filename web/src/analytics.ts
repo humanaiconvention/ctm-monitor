@@ -23,79 +23,35 @@ const CATEGORY_SAMPLE_RATES: Partial<Record<AnalyticsCategory, number>> = {
   heartbeat: 0.5, // keep only 50% heartbeats
 };
 
-// Transport configuration (can be replaced by injection)
-interface TransportConfig {
-  endpoint?: string; // e.g. '/api/analytics'
-  enabled: boolean;
-  useBeacon?: boolean;
-  maxRetries?: number; // retries for non-4xx failures
-  retryBaseDelayMs?: number; // base for exponential backoff
-  circuitBreakerThreshold?: number; // consecutive failures to open breaker
-  circuitBreakerCooldownMs?: number; // time before attempting to half-open
-  batchSizeLimit?: number; // max events per batch (cap)
-  batchBytesLimit?: number; // approximate JSON size cap
-}
-
-let transportConfig: TransportConfig = {
-  enabled: false,
-  maxRetries: 3,
-  retryBaseDelayMs: 400,
-  circuitBreakerThreshold: 6,
-  circuitBreakerCooldownMs: 60_000,
-  batchSizeLimit: 50,
-  batchBytesLimit: 30_000,
-};
-export function configureAnalyticsTransport(cfg: Partial<TransportConfig>) {
-  transportConfig = { ...transportConfig, ...cfg };
-}
-
-// Circuit breaker state
-let consecutiveFailures = 0;
-let breakerOpen = false;
-let breakerOpenedAt: number | null = null;
-
-function circuitBreakerAllows(): boolean {
-  if (!breakerOpen) return true;
-  if (breakerOpenedAt && (Date.now() - breakerOpenedAt) > (transportConfig.circuitBreakerCooldownMs || 60_000)) {
-    // half-open attempt
-    return true;
-  }
-  return false;
-}
-
-function recordSuccess() {
-  consecutiveFailures = 0;
-  breakerOpen = false;
-  breakerOpenedAt = null;
-}
-
-function recordFailure() {
-  consecutiveFailures += 1;
-  if (consecutiveFailures >= (transportConfig.circuitBreakerThreshold || 6)) {
-    breakerOpen = true;
-    breakerOpenedAt = Date.now();
-  }
-}
-
-// Minimal email sanitizer: strips emails from arbitrary metadata values except whitelisted keys
-const PII_WHITELIST = new Set(['userEmail','userId']);
-function sanitizeMetadata(meta: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
-  if (!meta) return meta;
-  const cleaned: Record<string, unknown> = {};
-  const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
-  for (const [k,v] of Object.entries(meta)) {
-    if (v == null) { cleaned[k] = v as unknown; continue; }
-    if (typeof v === 'string' && !PII_WHITELIST.has(k)) {
-      cleaned[k] = v.replace(emailRegex, '[redacted-email]');
-    } else if (typeof v === 'object' && !Array.isArray(v)) {
-      // shallow recurse one level for nested objects
-      cleaned[k] = sanitizeMetadata(v as Record<string, unknown>) || v;
-    } else {
-      cleaned[k] = v;
+// Transport & circuit breaker moved to analytics/transport
+import { enqueueForBackend, flushBackendQueue, getTransportDebugInfo, setTrackEventDelegate, transportIsEnabled } from './analytics/transport';
+// Back-compat re-exports for tests (will be removed after full modularization)
+export { configureAnalyticsTransport } from './analytics/transport';
+export { installErrorHooks } from './analytics/errors';
+import { __transportTest } from './analytics/transport';
+export const __test = {
+  _resetBreaker: () => { try { __transportTest._resetBreaker(); } catch { /* ignore */ } },
+  _forceHalfOpen: () => { try { __transportTest._forceHalfOpen(); } catch { /* ignore */ } },
+  _forceFlush: () => { try { flushBackendQueue(true); } catch { /* ignore */ } },
+  _getBreaker: () => { try { return __transportTest._getBreaker(); } catch { return {}; } },
+  _drain: async (timeoutMs = 500) => { // simplified: wait a short time for async fetch attempts
+    await new Promise(r => setTimeout(r, 5));
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      // No explicit in-flight flag exposed now; just break quickly
+      await new Promise(r => setTimeout(r, 10));
+      break;
     }
   }
-  return cleaned;
-}
+};
+
+// Sanitization moved to separate module for clarity.
+import { sanitizeMetadata } from './analytics/sanitize';
+
+// Debug / quiet mode -------------------------------------------------------
+const __isTestEnv = typeof process !== 'undefined' && (process.env.VITEST || process.env.NODE_ENV === 'test');
+let analyticsQuietMode = !!__isTestEnv;
+export function setAnalyticsQuietMode(quiet: boolean): void { analyticsQuietMode = quiet; }
 
 // Simple last-flush persistence
 function setLastFlushTs(ts: number) {
@@ -128,15 +84,18 @@ export type AnalyticsCategory =
   | 'error'
   | 'lifecycle'
   | 'heartbeat'
-  | 'intro';
+  | 'intro'
+  | 'config';
 
 // Actions per category (rough initial taxonomy)
-type InteractionActions = 'click' | 'cta' | 'toggle' | 'sw_auto_refresh' | 'sw_background_notice' | 'sw_update_decision' | 'sw_hard_bust_complete' | 'sw_config_drift';
+type InteractionActions = 'click' | 'cta' | 'toggle' | 'sw_auto_refresh' | 'sw_background_notice' | 'sw_update_decision' | 'sw_hard_bust_complete' | 'question_submit';
+// Legacy 'sw_config_drift' action removed after migration window; unified taxonomy uses category 'config' + action 'drift'.
+type ConfigActions = 'drift';
 type NavigationActions = 'page_view' | 'hash_change' | 'section_view';
 type PerfActions = 'hero_paint' | 'fid' | 'cls_total' | 'quote_transition' | 'perf_metric';
 type EngagementActions = 'focus' | 'visibility_change';
 type ErrorActions = 'exception' | 'unhandled_rejection';
-type LifecycleActions = 'session_start' | 'consent_granted' | 'consent_denied';
+type LifecycleActions = 'session_start' | 'consent_granted' | 'consent_denied' | 'breaker_open' | 'breaker_half_open' | 'breaker_closed';
 type HeartbeatActions = 'interval_ping';
 type IntroActions = 'intro_impression' | 'intro_stage_view' | 'intro_completed';
 
@@ -148,7 +107,8 @@ export type AnalyticsAction =
   | ErrorActions
   | LifecycleActions
   | HeartbeatActions
-  | IntroActions;
+  | IntroActions
+  | ConfigActions;
 
 export interface TrackEventOptions<M extends Record<string, unknown> = Record<string, unknown>> {
   category?: AnalyticsCategory;
@@ -228,12 +188,13 @@ let idleCallbackId: number | null = null;
 function validateSchema(category: AnalyticsCategory, action: AnalyticsAction): boolean {
   // Minimal runtime guard (compile-time already constrains). Extend if mismatches appear.
   switch (category) {
-  case 'interaction': return ['click','cta','toggle','sw_auto_refresh','sw_background_notice','sw_update_decision','sw_hard_bust_complete','sw_config_drift'].includes(action);
+  case 'interaction': return ['click','cta','toggle','sw_auto_refresh','sw_background_notice','sw_update_decision','sw_hard_bust_complete','question_submit'].includes(action);
+  case 'config': return ['drift'].includes(action);
     case 'navigation': return ['page_view','hash_change','section_view'].includes(action);
   case 'perf': return ['hero_paint','fid','cls_total','quote_transition','perf_metric'].includes(action);
     case 'engagement': return ['focus','visibility_change'].includes(action);
     case 'error': return ['exception','unhandled_rejection'].includes(action);
-    case 'lifecycle': return ['session_start','consent_granted','consent_denied'].includes(action);
+  case 'lifecycle': return ['session_start','consent_granted','consent_denied','breaker_open','breaker_half_open','breaker_closed'].includes(action);
     case 'heartbeat': return ['interval_ping'].includes(action);
   case 'intro': return ['intro_impression','intro_stage_view','intro_completed'].includes(action);
     default: return false;
@@ -271,106 +232,15 @@ function dispatchNow(opts: TrackEventOptions) {
   try { window.analytics?.track?.(action, { category, label, value, ...safeMeta, sessionId }); } catch { /* ignore */ }
   try { window.posthog?.capture?.(action, { category, label, value, ...safeMeta, sessionId }); } catch { /* ignore */ }
   // Transport backend dispatch (fire-and-forget)
-  if (transportConfig.enabled && transportConfig.endpoint) {
+  if (transportIsEnabled()) {
     enqueueForBackend(payload);
   }
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && !analyticsQuietMode) {
     console.warn('[trackEvent]', payload);
   }
 }
 
-// Backend batching & retry ------------------------------------------------
-type BackendEventPayload = InternalEventPayload;
-const backendQueue: BackendEventPayload[] = [];
-let backendFlushInFlight = false;
-let backendFlushTimer: number | null = null;
-
-function enqueueForBackend(ev: BackendEventPayload) {
-  backendQueue.push(ev);
-  scheduleBackendFlush();
-}
-
-function scheduleBackendFlush() {
-  if (backendFlushTimer != null) return;
-  backendFlushTimer = window.setTimeout(() => {
-    backendFlushTimer = null;
-    flushBackendQueue();
-  }, 3000);
-}
-
-function flushBackendQueue(force = false) {
-  if (!transportConfig.enabled || !transportConfig.endpoint) return;
-  if (!hasAnalyticsConsent()) return;
-  if (!force && backendQueue.length === 0) return;
-  if (!circuitBreakerAllows()) {
-    if (process.env.NODE_ENV !== 'production') console.warn('[analytics] circuit breaker open, skipping flush');
-    return;
-  }
-  if (backendFlushInFlight) return; // avoid concurrent flushes
-  backendFlushInFlight = true;
-  try {
-    // Apply batch caps
-    const batch: BackendEventPayload[] = [];
-    let bytes = 0;
-    const sizeLimit = transportConfig.batchBytesLimit || 30_000;
-    const countLimit = transportConfig.batchSizeLimit || 50;
-    while (backendQueue.length && batch.length < countLimit) {
-      const next = backendQueue[0];
-      const estimated = JSON.stringify(next).length + 1;
-      if ((bytes + estimated) > sizeLimit && batch.length > 0) break;
-      backendQueue.shift();
-      batch.push(next);
-      bytes += estimated;
-    }
-    if (batch.length === 0) { backendFlushInFlight = false; return; }
-    sendBatchWithRetry(batch, 0).finally(() => {
-      backendFlushInFlight = false;
-      if (backendQueue.length) scheduleBackendFlush();
-    });
-  } catch {
-    backendFlushInFlight = false;
-  }
-}
-
-async function sendBatchWithRetry(batch: BackendEventPayload[], attempt: number): Promise<void> {
-  const endpoint = transportConfig.endpoint!;
-  const maxRetries = transportConfig.maxRetries ?? 3;
-  const body = JSON.stringify({ events: batch });
-  const headers = { 'Content-Type': 'application/json' };
-  try {
-    const res = await fetch(endpoint, { method: 'POST', headers, body, keepalive: transportConfig.useBeacon === true });
-    if (!res.ok) {
-      if (res.status >= 400 && res.status < 500) {
-        recordFailure(); // treat 4xx as permanent failure for breaker counting
-        if (process.env.NODE_ENV !== 'production') console.warn('[analytics] non-retryable status', res.status);
-        return;
-      }
-      if (attempt < maxRetries) {
-        const delay = (transportConfig.retryBaseDelayMs || 400) * Math.pow(2, attempt);
-        await new Promise(r => setTimeout(r, delay));
-        return sendBatchWithRetry(batch, attempt + 1);
-      } else {
-        recordFailure();
-        if (process.env.NODE_ENV !== 'production') console.warn('[analytics] max retries exceeded');
-        // Requeue unsent batch (optional) - here we push back if breaker not open
-        if (!breakerOpen) backendQueue.unshift(...batch);
-      }
-    } else {
-      recordSuccess();
-      setLastFlushTs(Date.now());
-    }
-  } catch {
-    if (attempt < maxRetries) {
-      const delay = (transportConfig.retryBaseDelayMs || 400) * Math.pow(2, attempt);
-      await new Promise(r => setTimeout(r, delay));
-      return sendBatchWithRetry(batch, attempt + 1);
-    } else {
-      recordFailure();
-      if (process.env.NODE_ENV !== 'production') console.warn('[analytics] network error, giving up');
-      if (!breakerOpen) backendQueue.unshift(...batch);
-    }
-  }
-}
+// Backend batching & retry moved to transport module
 
 function scheduleLowPriorityFlush() {
   if (!isBrowser()) return;
@@ -440,6 +310,18 @@ export function trackHeroPaint(): void {
   trackEvent({ category: 'perf', action: 'hero_paint', value: Math.round(t) });
 }
 
+// Generic perf metric helper for unified taxonomy.
+// Example: trackPerfMetric('LCP', 2450, { phase: 'final', size: 12345 })
+export function trackPerfMetric(metric: string, value: number, meta?: Record<string, unknown>, phase?: string): void {
+  if (!isBrowser()) return;
+  const metadata: Record<string, unknown> = { metric, ...(phase ? { phase } : {}), ...(meta || {}) };
+  if (!hasAnalyticsConsent()) {
+    preConsentQueue.push({ category: 'perf', action: 'perf_metric', value: Math.round(value), metadata, priority: 'high' });
+    return;
+  }
+  trackEvent({ category: 'perf', action: 'perf_metric', value: Math.round(value), metadata });
+}
+
 // Initialize analytics early if needed (e.g., ensure session id even before first event)
 export function initAnalyticsSession(): void { ensureSessionId(); }
 
@@ -489,40 +371,7 @@ export function initSectionObserver(sectionIds: string[] = ['mission','vision','
   });
 }
 
-// Error tracking -----------------------------------------------------------
-let errorHooksInstalled = false;
-export function installErrorHooks(): void {
-  if (!isBrowser()) return;
-  if (errorHooksInstalled) return;
-  errorHooksInstalled = true;
-  window.addEventListener('error', (e) => {
-    trackEvent({ category: 'error', action: 'exception', priority: 'high', metadata: {
-      message: e.message,
-      filename: e.filename,
-      lineno: e.lineno,
-      colno: e.colno,
-      stack: (e.error && (e.error as Error).stack) || undefined,
-      name: (e.error && (e.error as Error).name) || undefined,
-    }});
-  });
-  window.addEventListener('unhandledrejection', (e) => {
-    const reasonAny = (e as PromiseRejectionEvent).reason as unknown;
-    let reasonMsg = 'unknown';
-    let stack: string | undefined;
-    if (reasonAny) {
-      if (typeof reasonAny === 'string') reasonMsg = reasonAny;
-      else if (reasonAny instanceof Error) { reasonMsg = reasonAny.message; stack = reasonAny.stack; }
-      else if (typeof (reasonAny as { message?: unknown }).message === 'string') {
-        reasonMsg = String((reasonAny as { message?: unknown }).message);
-      }
-    }
-    trackEvent({ category: 'error', action: 'unhandled_rejection', priority: 'high', metadata: {
-      reason: reasonMsg,
-      stack,
-      name: reasonAny instanceof Error ? reasonAny.name : undefined,
-    }});
-  });
-}
+// Error tracking moved to analytics/errors.ts
 
 // Consent change hook (developer can call setAnalyticsConsent, then manually flush)
 export function onConsentGranted(): void {
@@ -559,15 +408,14 @@ export function registerUnloadFlush(): void {
 
 // Debug info exposure -----------------------------------------------------
 export function getAnalyticsDebugInfo() {
+  const transport = getTransportDebugInfo();
   return {
     consent: hasAnalyticsConsent(),
     lowPriorityQueue: lowPriorityQueue.length,
     preConsentQueue: preConsentQueue.length,
-    backendQueue: backendQueue.length,
+    backendTransport: transport,
     lastFlushTs: getLastFlushTs(),
     sampling: CATEGORY_SAMPLE_RATES,
-    breaker: { open: breakerOpen, consecutiveFailures, openedAt: breakerOpenedAt },
-    transportEnabled: transportConfig.enabled,
   };
 }
 
@@ -621,20 +469,13 @@ export function trackQuoteTransition(durationMs: number, threshold = PERF_THRESH
 }
 
 // Internal test helpers (not for production usage) -----------------------
-export const __test = {
-  _getBreaker: () => ({ consecutiveFailures, breakerOpen, breakerOpenedAt }),
-  _resetBreaker: () => { consecutiveFailures = 0; breakerOpen = false; breakerOpenedAt = null; },
-  _forceFlush: () => { try { flushBackendQueue(true); } catch { /* ignore */ } },
-  // Await until no flush in flight (polling) or timeout (2s) for deterministic unit tests
-  _drain: async (timeoutMs = 2000) => {
-    const start = Date.now();
-    while (true) {
-      if (!backendFlushInFlight) break;
-      if (Date.now() - start > timeoutMs) break;
-      await new Promise(r => setTimeout(r, 10));
-    }
-    // give microtasks a chance (fetch resolution)
-    await new Promise(r => setTimeout(r, 5));
-  },
-  _forceHalfOpen: () => { if (breakerOpen) { breakerOpenedAt = Date.now() - (transportConfig.circuitBreakerCooldownMs || 60_000) - 10; } }
-};
+// (legacy bottom __test removed; unified at top for breaker utilities)
+
+// Register trackEvent delegate with transport (after definition of trackEvent above).
+setTrackEventDelegate(({ category, action, metadata }) => {
+  if (metadata) {
+    trackEvent({ category, action, priority: 'high', metadata });
+  } else {
+    trackEvent({ category, action, priority: 'high' });
+  }
+});

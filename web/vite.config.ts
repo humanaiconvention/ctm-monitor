@@ -93,5 +93,17 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, 'src'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'analytics-core': [ 'src/analytics/core.ts' ],
+            'analytics-engagement': [ 'src/analytics/engagement.ts' ],
+            'analytics-perf': [ 'src/analytics/perf.ts' ],
+            'analytics-errors': [ 'src/analytics/errors.ts' ],
+          }
+        }
+      }
+    },
   };
 });

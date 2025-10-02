@@ -1,0 +1,1606 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "ts": "2025-10-02T04:14:53.270Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:17:26.100Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:22:42.436Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:32:56.189Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:32:56.281Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:32:56.372Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:34:08.012Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "extra": {
+          "gzipKB": 0.02,
+          "brotliKB": 0
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:34:28.456Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:34:31.866Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:34:40.354Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:34:57.127Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:34:57.207Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:34:57.297Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:35:04.354Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:35:04.557Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:35:04.739Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:35:08.266Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:42:43.711Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:42:43.925Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:42:44.043Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:42:47.480Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:54:27.132Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:54:27.349Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:54:27.534Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:54:31.363Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:54:55.401Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:54:55.640Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:54:55.787Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:54:59.352Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:56:58.037Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:56:58.197Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:56:58.372Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:57:01.799Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:59:23.256Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:59:23.453Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:59:23.656Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T04:59:27.135Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.48,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.13
+        },
+        "errors": {
+          "gzipKB": 1.3,
+          "brotliKB": 1.14
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:02:35.252Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:02:35.890Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:02:36.531Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:02:40.066Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:29:41.059Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:29:41.231Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:29:41.385Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:29:44.833Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:33:29.291Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:33:29.442Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:33:29.600Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:33:32.993Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:37:29.287Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:37:29.461Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:37:29.610Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:37:33.230Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:38:33.737Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:38:34.005Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:38:34.288Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:38:38.797Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:39:08.367Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:39:08.642Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:39:08.825Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T05:39:12.343Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:14:20.594Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:14:20.863Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:14:21.094Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:14:24.586Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:14:47.765Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:14:47.909Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:14:48.077Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:14:51.606Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:24:40.032Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:24:40.185Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:24:40.414Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-02T06:24:44.736Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    }
+  ]
+}

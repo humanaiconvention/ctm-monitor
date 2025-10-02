@@ -22,10 +22,10 @@ export default function AnalyticsDebugOverlay() {
         <div style={{ marginTop: 4, background: 'rgba(0,0,0,0.8)', color: '#fff', padding: 8, maxWidth: 320, fontSize: 11, lineHeight: 1.4 }}>
           <div>consent: {String(info.consent)}</div>
             <div>lowQ: {info.lowPriorityQueue} preQ: {info.preConsentQueue}</div>
-            <div>backendQ: {info.backendQueue}</div>
+            <div>backendQ: {info.backendTransport.queueLength}</div>
             <div>lastFlush: {info.lastFlushTs ? new Date(info.lastFlushTs).toLocaleTimeString() : '—'}</div>
-            <div>breaker: {info.breaker.open ? 'OPEN' : 'closed'} fails: {info.breaker.consecutiveFailures}</div>
-            <div>transport: {info.transportEnabled ? 'on' : 'off'}</div>
+            <div>breaker: {info.backendTransport.breaker.open ? 'OPEN' : 'closed'} fails: {info.backendTransport.breaker.consecutiveFailures}</div>
+            <div>transport: {info.backendTransport.enabled ? 'on' : 'off'} ({info.backendTransport.endpoint || 'no-endpoint'})</div>
             <details style={{ marginTop: 4 }}>
               <summary>sampling</summary>
               <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(info.sampling, null, 2)}</pre>

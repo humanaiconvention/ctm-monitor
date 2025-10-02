@@ -26,12 +26,64 @@ This package (`web/`) is the front-end for HumanAI Convention. It is built with 
 * [Accessibility & Automated A11y](#accessibility--automated-a11y)
 * [Visual Regression & Storybook](#visual-regression--storybook)
 * [Custom Type Augmentation (jest-axe + Vitest)](#custom-type-augmentation-jest-axe--vitest)
+* [Main Page Enhancements (Hero, Integrity, Performance)](#main-page-enhancements-hero-integrity-performance)
+* [Preview Questions Submission](#preview-questions-submission)
+* [Dual-Question Intro Gate](#dual-question-intro-gate)
+* [Intro Gate Analytics Stages](#intro-gate-analytics-stages)
 
 ## Taglines
 Primary (hero): We will know — together.  
 Secondary (lede): Trust isn’t a feeling. It’s evidence.
 
-The primary tagline now appears as the H1; the previous hero line is intentionally retained as the epistemic anchor supporting our integrity & verification modules.
+The dual-question intro now also includes a keyboard-accessible "Skip" button allowing users to bypass the staged prompts instantly. Skipping:
+
+* Immediately records `intro_impression` (stage: `skip_click`).
+* Fires `intro_completed` with `metadata.skip=true` (and includes full elapsed `durationMs` up to skip).
+* Persists completion flag (`hq:introComplete`) so subsequent visits suppress the gate.
+* Leaves the existing "Answer here" CTA behavior unchanged for users who engage.
+
+Accessibility / UX notes:
+* Skip button is always present (CTA appears after timing; reduced motion path shows both with minimal delay).
+* Focus order respects DOM order (Answer, then Skip) once CTA visible; before CTA, Skip alone is focused.
+* Visual style is intentionally low-emphasis (outlined) to encourage reading while honoring fast-path intent.
+
+## Main Page Enhancements (Hero, Integrity, Performance)
+
+Recent improvements focused on first‑paint performance, accessibility semantics, and transparency surface readiness.
+
+### Summary
+| Area | Change | Rationale |
+|------|--------|-----------|
+| Hero Landmark | Added `role="banner"` + `aria-labelledby` referencing the H1 | Clear page landmark for assistive tech |
+| Logo | Added accessible title + refined container `aria-label` | Voice narration clarity |
+| CTA Group | Wrapped primary actions in a `<nav aria-label="Primary calls to action">` | Landmark navigation / quick jump |
+| Quotes (Voices) | IntersectionObserver + idle + scroll fallback; `<noscript>` fallback text | Deterministic early load trigger & graceful degradation |
+| Integrity KPIs | Converted list to semantic `<dl>` with `<dt>/<dd>` pairs | Proper term/value semantics for screen readers |
+| KPI Loading | Replaced placeholder dashes with animated shimmer skeleton (`.kpi-skel`) | Perceived performance & clarity of loading state |
+| Critical CSS | Extracted minimal hero layout to inline `<style data-critical="hero">` | Faster FCP / reduced render‑blocking CSS |
+| Reduced Motion | Ensured logo animation disables cleanly when user prefers reduced motion | Accessibility compliance |
+
+### Critical Hero CSS Strategy
+The inline block (`critical/hero.css.ts`) contains only the rules required for a stable hero first paint (layout, typography, essential backgrounds, CTA baseline). Heavy shadows and animation keyframes are intentionally deferred to the full stylesheet to keep bytes small.
+
+Upgrade path:
+1. Validate visual parity across target browsers.
+2. (Optional) Remove duplicated hero rules from `App.css` once confident.
+3. Consider `media="print"` swap pattern for non‑critical stylesheet in future if further FCP improvements needed.
+
+### Testing Additions
+`__tests__/mainPageAccessibility.test.tsx` asserts:
+* Presence of banner role and H1.
+* Integrity KPIs rendered as a definition list.
+* Skeleton placeholders appear before data load.
+* Quote spotlight placeholder present prior to lazy import resolution.
+
+### Future Opportunities
+* Inline small subset of typography vars in HTML to reduce dependency on base CSS for hero render.
+* Preload hero background image with `as="image"` and appropriate `fetchpriority` once stable.
+* Add CLS & LCP field metrics comparison pre/post critical extraction (analytics event already scaffolded via `trackHeroPaint`).
+
+These changes advance initial transparency goals while tightening the perceptual performance envelope for first meaningful paint.
 
 ## Temporary Access Gate (Preview Only)
 
@@ -374,6 +426,7 @@ Current workflow artifacts: coverage (JSON + HTML), badge SVG, Playwright report
 | `npm run test:visual` | Visual regression snapshots only. |
 | `npm run test:a11y` | Accessibility (axe) checks only. |
 | `npm run security:audit` | Dependency audit (JSON output). |
+| `node scripts/analytics-size-check.mjs` | Enforce analytics chunk size budgets (gzip + brotli, ratchet, markdown/json artifacts). |
 
 ## Quality Gating
 
@@ -462,11 +515,31 @@ If `VITE_APPINSIGHTS_KEY` is provided, the app initializes a minimal Application
 | Signal | AI Event Name | Notes |
 |--------|---------------|-------|
 | Hard bust completion | `sw_hard_bust_complete` | Mirrors internal analytics action |
-| Config drift | `sw_config_drift` | Fired only when hash changes |
+| Config drift | `config/drift` | Fired only when hash changes |
 | Web Vitals | `perf_metric` | Each metric sent as event + metric (name=value) |
 | Fetch dependency | `fetch_dependency` | Lightweight wrapper around `window.fetch` capturing method, status/error & duration |
 
 Sampling defaults to 50% but can be overridden using `VITE_APPINSIGHTS_SAMPLE` (0–100). Set `VITE_DISABLE_VITALS=true` to suppress Web Vitals collection entirely (privacy / perf isolation mode). When vitals are disabled no events with action `perf_metric` sourced from Web Vitals will be emitted, but you can still emit your own custom perf metrics if desired.
+
+### Dev Drift Mutation Harness (Testing Only)
+
+In non-production builds a lightweight harness is exposed on `window` to deterministically simulate configuration drift for E2E tests without rebuilding:
+
+| Global | Signature | Effect |
+|--------|-----------|--------|
+| `__testMutatePreviewQuestionsConfig` | `(patch: Record<string,unknown>) => string` | Shallow merges preview questions config with `patch`, recomputes hash, emits `config/drift` (`label=preview_questions`) if changed, updates meta tags, returns new hash. |
+| `__testMutateSwConfig` | `(patch: Record<string,unknown>) => string` | Shallow merges exposed SW config subset, recomputes hash, emits `config/drift` (`label=sw_config`) if changed, updates meta tags, returns new hash. |
+
+Both functions also tag drift metadata with `harness: true` so downstream dashboards can filter out synthetic events if desired. They are no-ops (undefined) in production bundles.
+
+Example (Playwright page context):
+```ts
+const initial = await page.getAttribute('meta[name="x-preview-questions-config-hash"]','content');
+const next = await page.evaluate(() => window.__testMutatePreviewQuestionsConfig?.({ maxPerHour: 999 }));
+expect(next).not.toBe(initial);
+```
+
+Avoid using these harness functions in application runtime code; they are exclusively for automated drift verification.
 
 Connection options:
 1. `VITE_APPINSIGHTS_CONNECTION_STRING` (preferred if present)
@@ -670,6 +743,86 @@ Performance budgets enforced (see `lighthouserc.json`):
 
 To adjust: edit `web/lighthouserc.json` and re-run `npm run build && npx lhci autorun` locally.
 
+### Analytics Chunk Size Budgets & Ratchet
+
+We enforce per‑chunk budgets for the modular analytics layer. Budgets live in `web/analytics-budgets.json` (validated by a local JSON Schema `analytics-budgets.schema.json`). Each chunk entry supports:
+
+| Field | Required | Meaning |
+|-------|----------|---------|
+| `gzipKB` | Yes | Max allowed gzipped size (KB). |
+| `brotliKB` | No | Optional Brotli cap; enforced only when present and brotli support available. |
+| `floorKB` | No | Minimum floor during automatic ratcheting (prevents over-tightening). |
+| `locked` | No | If true, ratchet logic skips reductions for this chunk. |
+| `meta` | No | Free-form note.
+
+Schema reference is declared via `$schema` in the budgets file for editor validation (some linters may warn—safe to ignore).
+
+Script: `node scripts/analytics-size-check.mjs` (normally invoked post-build). It outputs:
+* Console table (gzip + optional brotli sizes / limits / headroom)
+* JSON artifact: `dist/analysis/analytics-size-report.json` (or custom via `--json-out`)
+  * Fields: `generated`, `previousSnapshotTs`, `sparklineWindow`, explicit `deltas` map, `schema` block (mode/strict/errors), lightweight `history.entries` count, plus `budgets` + `ratchet` state
+  * Validated optionally by `analytics-size-report.schema.json` (drop `"$schema": "./analytics-size-report.schema.json"` at the top of the artifact if you want editor validation during local inspection)
+* Markdown artifact: `dist/analysis/analytics-size-report.md` (PR-friendly table incl. ✅ / ❌ status emojis)
+* Maintains stability counter: `.analytics-size-state.json`
+* (Optional) Ratchet state: `.analytics-size-ratchet.json`
+
+#### CLI Flags
+| Flag | Purpose |
+|------|---------|
+| `--max-<chunk>=KB` | Override gzip budget for a specific chunk (temporary / CI experiment). |
+| `--write-baseline` | Rewrite budgets file to current observed sizes (after stable runs). |
+| `--stable-runs=N` | Require N consecutive passing runs before baseline write. |
+| `--force` | Force baseline write even if stability requirement not met. |
+| `--slack-webhook=<url>` | Override / supply Slack webhook URL (else env `SLACK_WEBHOOK_URL`). |
+| `--no-brotli` | Skip brotli measurement even if available. |
+| `--ratchet-after=N` | Apply automatic budget reduction after N improving runs. |
+| `--ratchet-percent=P` | Percent reduction applied on ratchet (e.g. 5 = 5%). |
+| `--headroom-threshold=K` | Minimum per-chunk headroom (KB) to count a run as improving. |
+| `--min-floor=K` | Global minimum floor (KB) any budget can be reduced to. |
+| `--ratchet-cooldown=N` | Require N improving cycles after a reduction before the next ratchet can apply (prevents rapid successive tightening). |
+| `--schema-mode=off|warn|fail` | Validate budgets JSON against local schema; `warn` logs issues, `fail` exits non‑zero on violations. |
+| `--schema-strict` | Additionally fail/warn when unknown chunk keys appear (enforces canonical chunk set). |
+| `--update-missing-brotli` | Auto-populate missing `brotliKB` entries with current measured size (also sets/adjusts `floorKB` if needed). |
+| `--pr-comment` | Attempt to post the Markdown report as a GitHub PR comment (requires `GITHUB_TOKEN` + repo/PR context). |
+| `--pr-number=N` | Explicit PR number override (if detection from `GITHUB_REF` not possible). |
+| `--history-window=N` | Override sparkline window length (default 12) for the trend column. |
+| `--json-out=path` | Write JSON artifact to custom path (relative or absolute). Default remains `dist/analysis/analytics-size-report.json`. |
+| `--chunks=core,engagement,perf,errors` | Comma‑separated dynamic chunk list (supports future expansion). Budgets entries auto‑stubbed if missing. Interacts with `--schema-strict` for canonical enforcement. |
+
+Improving run: all chunks meet current budgets AND each has headroom ≥ threshold (for gzip and brotli if present). After `--ratchet-after` consecutive improving runs the script reduces budgets by `ratchet-percent` (multiplicative) while respecting:
+* Per-chunk `floorKB`
+* Global `--min-floor`
+* `locked` flag
+* Cooldown: When `--ratchet-cooldown` is supplied, after a reduction the script requires that many improving cycles before another reduction is considered. This steadies budget tightening and reduces noise in PR history.
+
+The budgets file gains an updated `notes` field noting ratchet application. The ratchet streak then resets.
+
+Example (CI step):
+```
+node web/scripts/analytics-size-check.mjs --ratchet-after=5 --ratchet-percent=5 --headroom-threshold=0.5 --min-floor=3
+```
+
+To establish a fresh baseline after a refactor:
+```
+node web/scripts/analytics-size-check.mjs --stable-runs=3 --write-baseline
+```
+
+#### Workflow Integration Tips
+1. Run after production build (so chunk filenames are final hashed outputs).
+2. Upload both JSON + Markdown artifacts; the Markdown table includes emoji status (✅ pass / ❌ fail) and can be posted as a PR comment (or let the script post automatically with `--pr-comment`).
+3. Consider gating deploy on failures (non-zero exit when any chunk exceeds a limit).
+4. Slack alert triggers automatically on regression when webhook configured.
+5. History file `.analytics-size-history.json` stores up to 200 snapshots used to render sparklines (last 12 points) in the Markdown report for trend visibility.
+6. Enable schema validation in CI with `--schema-mode=fail` to catch accidental field/structure drift early.
+
+#### Future Enhancements (Roadmap)
+* Adaptive ratchet percent scaling (smaller % as budgets shrink further).
+* Extended asset class budgets (CSS critical vs non-critical separation).
+* Optional HTML badge summarizing current utilization.
+* Budget diff annotation lines (showing delta since last ratchet) in Markdown.
+
+Rationale: Continuous slight pressure on non-critical analytics bytes preserves performance headroom for core product features without requiring manual recalibration.
+
 ### Local Development Tips
 
 | Task | Example |
@@ -683,6 +836,185 @@ To adjust: edit `web/lighthouserc.json` and re-run `npm run build && npx lhci au
 
 ---
 Maintained as part of the HumanAI Convention supply‑chain verified build.
+
+## Preview Questions Submission
+## Dual-Question Intro Gate
+
+The legacy single-prompt intro (`PreLogoSequence`) has been replaced by a dual‑question animated gate to establish conceptual focus before first paint of the main hero.
+
+Sequence (default timings):
+
+| Stage | Copy | Duration |
+|-------|------|----------|
+| Q1 visible | “What is consciousness?” | 5000 ms |
+| Crossfade (Q1 → Q2) | overlap fade | 1000 ms |
+| Q2 dwell | “How is it defined?” | 2500 ms (before CTA appears) |
+| CTA visible | “Answer here” button | persists until user proceeds |
+| Exit fade | Overlay dismiss | 600 ms |
+
+Implementation: `src/components/PreviewIntroGate.tsx` (CSS in `src/previewIntro.css`).
+
+Accessibility & UX:
+* Uses `role="dialog"` + `aria-modal="true"` and a single heading (`h1`).
+* Crossfade keeps both questions in the DOM for assistive tech continuity (non-active question `aria-hidden`).
+* Respects `prefers-reduced-motion`: skips animation, shows second question & CTA immediately.
+* Keyboard: `Enter` / `Space` triggers proceed once CTA is present.
+* Local persistence: sets `localStorage['hq:introComplete'] = 'true'` after completion; gate will not replay unless cleared.
+
+Analytics Events (consolidated):
+* `intro_impression` stages: `q1_show`, `transition_start`, `q2_show`, `skip_click`
+* `intro_completed` metadata: `durationMs`, `questionsShown`, `skip`, `morphLatencyMs`
+
+Customization:
+* Adjust timings at top of `PreviewIntroGate.tsx` constants: `FIRST_QUESTION_VISIBLE_MS`, `INTER_QUESTION_FADE_MS`, `SECOND_QUESTION_BEFORE_CTA_MS`, `EXIT_FADE_MS`.
+* Button label can be changed by editing the `Answer here` text inside the component (search for `preview-intro__cta`).
+* To bypass during development, manually set the localStorage key to `true` or introduce a query flag (future enhancement suggestion: support `?noIntro=1`).
+
+Removal of Legacy Component:
+* `PreLogoSequence` and related Storybook/test artifacts have been removed to reduce bundle size; only the new gate remains.
+
+Testing:
+* `PreviewIntroGate.test.tsx` uses fake timers to advance through phases and assert CTA appearance & completion callback.
+* Ensure wrapping `vi.advanceTimersByTime()` calls with `act()` to avoid React scheduling warnings (already implemented).
+
+## Intro Gate Analytics Stages
+
+The intro gate emits a minimized set of events to reduce telemetry noise while preserving key UX timing insights.
+
+`intro_impression` stages:
+| Stage | Description | Extra Metadata |
+|-------|-------------|----------------|
+| `q1_show` | First question displayed | `index:0`, `text` |
+| `transition_start` | Crossfade begins (Q1→Q2) | `from:0`, `to:1`, `durationMs` (planned fade) |
+| `q2_show` | Second question fully visible | `index:1`, `text` |
+| `skip_click` | User invoked Skip fast-path | — |
+| `abandon` | User hid page (visibility hidden) before completion | `reason` |
+| `linger` | User still viewing intro after 10s without progressing | `atMs` |
+
+`intro_completed` metadata:
+| Field | Meaning |
+|-------|---------|
+| `durationMs` | Total elapsed from mount to completion action (CTA or skip) |
+| `questionsShown` | 1 or 2 depending on skip timing |
+| `skip` | Boolean indicating Skip path |
+| `morphLatencyMs` | Time from CTA morph start until completion (undefined if skipped pre-CTA) |
+| `mode` | Always `dual_prompt` (future-proofing) |
+
+Removed events: `morph_start`, `skip_retire_start`, `skip_retire_end` were folded into `intro_completed.morphLatencyMs` and existing stages to keep payload lean.
+
+Test Coverage: `PreviewIntroGate.test.tsx` asserts presence of `skip_click` stage and `intro_completed` emission.
+
+Future metrics ideas:
+* `cta_delayMs` (difference between `q2_show` and CTA visibility) for experimentation.
+* `linger` stage after a long dwell without action (not yet implemented) to distinguish passive reading vs. abandon.
+
+Rationale:
+The paired questions establish scope (phenomenological target then definitional clarity) before engagement, emphasizing epistemic framing while keeping overhead minimal (a single lightweight overlay, no network requests). Timings favor comprehension over raw speed but remain under 10s to first interactive CTA (~8.5s including exit fade). Reduced-motion path keeps it instantaneous.
+
+
+An ephemeral question submission surface is available at `/preview` (future path may evolve). It allows prospective participants to submit a single free‑form question for early exploration while preserving a lightweight, privacy‑sensitive posture.
+
+### Feature Highlights
+| Capability | Behavior | Implementation Notes |
+|------------|----------|----------------------|
+| Draft Persistence | In‑progress question text is autosaved (250ms debounce) to `localStorage` and restored on revisit (same browser) | Key: `preview:question:draft:v1` |
+| Submission History | Minimal history stored (timestamp + content hash) to enforce rate limits & duplicate detection | Key: `preview:question:history:v1` |
+| Rate Limiting | Max 5 submissions per rolling hour (client only; future server enforcement recommended) | Sliding window filter of history timestamps |
+| Duplicate Guard | Same text (hash) ignored if re‑submitted within 6h window | Non‑cryptographic string hash (deterministic) |
+| Analytics Action | Dedicated action `question_submit` with metadata (length, word count, prior submissions) | Category `interaction` |
+| Sanitization | Email patterns in free text redacted before analytics dispatch | Reuses global analytics sanitizer |
+| Success Feedback | Form fades out, success message animates in, then auto‑dismisses allowing fresh entry | CSS keyframes in `App.css` |
+| Accessibility | Form & alerts use semantic roles (`alert`, labeled controls) | Tested via Vitest assertions |
+
+### Stored Keys
+All keys intentionally versioned for safe future schema changes:
+* `preview:question:draft:v1` – `{ question: string, name?: string, email?: string }` object.
+* `preview:question:history:v1` – Array of `{ t: ISO8601 string, h: hash }` records.
+
+Clearing local state for a clean test / demo:
+```js
+localStorage.removeItem('preview:question:draft:v1');
+localStorage.removeItem('preview:question:history:v1');
+```
+
+### Rate Limit Logic
+1. Load history (fault‑tolerant JSON parse; corrupt entries ignored).
+2. Prune entries older than 1 hour for active limit calculation.
+3. If `pruned.length >= 5` → block submission and show rate limit alert (includes time to reset).
+4. Duplicate detection: if any history entry with same hash is < 6h old → treat as duplicate (no new analytics event; shows duplicate alert).
+
+Edge cases handled:
+* Corrupt JSON → silently reset that key (prevents permanent lockout).
+* Clock skew (future timestamps) → they are retained but still subject to standard pruning when real time surpasses them.
+* Rapid submissions (<250ms) still individually counted (draft debounce does not affect submission path).
+
+### Analytics Metadata (`question_submit`)
+| Field | Meaning |
+|-------|---------|
+| `len` | Character length of submitted question |
+| `words` | Word count (simple whitespace split) |
+| `priorInWindow` | Number of prior submissions in current 1h window before this one |
+| `duplicate` | Boolean flag when blocked as duplicate (event not emitted if duplicate prevented; reserved for potential future partial emission) |
+
+Additional base context from analytics layer (session id, timestamps) is automatically attached.
+
+### Styling & Animation
+CSS additions in `App.css`:
+* `.preview-questions__success` base + `--active` modifier triggers fade/scale animation.
+* Form pulse animation briefly runs after a successful submission (visual reinforcement) with reduced motion safeguard inherited from global settings.
+
+### Testing
+Vitest tests (`src/pages/PreviewQuestions.test.tsx`) cover:
+* Draft persistence restore.
+* Rate limiting after seeding history (ensures deterministic behavior).
+* Basic validation and analytics emission.
+
+### Environment Overrides
+The following optional build-time environment variables allow tuning thresholds without code changes (applied in `previewQuestions.ts` with validation):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VITE_PREVIEW_MAX_PER_HOUR` | `5` | Max submissions in rolling hour |
+| `VITE_PREVIEW_RATE_LIMIT_WINDOW_MS` | `3600000` | Rolling rate limit window (ms) |
+| `VITE_PREVIEW_DUPLICATE_WINDOW_MS` | `21600000` | Duplicate hash suppression window (ms) |
+| `VITE_PREVIEW_DRAFT_DEBOUNCE_MS` | `250` | Draft persistence debounce (ms) |
+| `VITE_PREVIEW_SUCCESS_AUTO_HIDE_MS` | `2400` | Success message auto-hide delay (ms) |
+| `VITE_PREVIEW_EXPOSE_META` | unset (non-prod only) | Force meta exposure of config in production when set to `true` |
+
+Set in `.env`, `.env.preview`, or deployment-specific build environment; invalid (non-positive) numbers fall back to defaults.
+
+### Meta Tag Exposure & Drift Detection
+When not in production (or when `VITE_PREVIEW_EXPOSE_META=true`) the current numeric configuration is exposed:
+
+1. `<meta name="x-preview-questions-config-json" content='{ "MAX_PER_HOUR":5, ... , "configHash":"<hash>" }'>`
+2. `<meta name="x-preview-questions-config-hash" content="<hash>">`
+
+A lightweight FNV-1a hash of the full config object supports drift detection across navigations. If the stored previous hash differs from the new hash, an analytics event (`config` category, action `drift`, label `preview_questions`) is emitted with `{ previous, current }` metadata. This mirrors the service worker config drift pattern for consistent observability.
+
+Console helper:
+```js
+window.__dumpPreviewQuestionsConfig()
+```
+Returns the current runtime config object and logs it for inspection.
+
+### Future Hardening (Server-Side Suggestions)
+* Server authoritative rate limiting (IP + UA hash / token) to prevent client bypass.
+* Bot mitigation (honeypot field or challenge after threshold).
+* Optional email verification workflow (only after explicit consent – avoid silent PII expansion).
+* Spam/abuse heuristic scoring (length anomalies, repeated substrings) with privacy-aware hashing.
+
+### Configuration
+Current thresholds are inline constants in `PreviewQuestions.tsx`:
+```ts
+const MAX_PER_HOUR = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const DUPLICATE_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
+```
+If future runtime configurability is desired, centralize them in a config module (mirroring `sw-config.ts`) and optionally surface via meta for drift detection.
+
+### Privacy Posture
+No question content leaves the browser until the user submits. Analytics metadata stores only derived metrics (length/word count) and a hash for duplicate detection—NOT the raw question text. Ensure any future backend ingestion preserves this minimization principle unless explicit user consent is expanded.
+
 
 ## Environment-Specific CSP Generation
 
@@ -861,7 +1193,7 @@ Use this to verify that the deployed environment picked up intended overrides wi
 
 ### Config Hash Drift Detection
 
-Each page load deterministically computes a hash of the exposed SW configuration subset (currently `manifestHardBustRatio` and `autoRefresh` block). The hash is persisted in `localStorage` under key `sw:configHash`. If a subsequent load produces a different hash (indicating a configuration change between navigations or deployments) an analytics event `sw_config_drift` is fired with metadata `{ previous, current }` before updating the stored value. This allows downstream dashboards to surface configuration churn without parsing build artifacts.
+Each page load deterministically computes a hash of the exposed SW configuration subset (currently `manifestHardBustRatio` and `autoRefresh` block). The hash is persisted in `localStorage` under key `sw:configHash`. If a subsequent load produces a different hash (indicating a configuration change between navigations or deployments) an analytics event (`config` category, action `drift`, label `sw_config`) is fired with metadata `{ previous, current }` before updating the stored value. This allows downstream dashboards to surface configuration churn without parsing build artifacts.
 
 Hash characteristics:
 - Algorithm: 32‑bit FNV-1a style accumulation, hex padded to 8 chars.
@@ -879,7 +1211,7 @@ Recent SW/observability related actions (category: `interaction`):
 | `sw_auto_refresh` | Client elects silent auto-refresh | `{ ratio, added, removed }` |
 | `sw_background_notice` | Background snackbar displayed after silent update | none / `{}` |
 | `sw_hard_bust_complete` | Full precache rebuild finished and clients notified | `{ ratio, total }` |
-| `sw_config_drift` | Config hash changed between navigations | `{ previous, current }` |
+| `config/drift` | Config hash changed between navigations | `{ previous, current }` |
 
 ### Playwright Meta Tag Tests & Browser Install
 

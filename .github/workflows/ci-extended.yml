@@ -40,6 +40,8 @@ jobs:
           npm --workspace web run coverage:badge || echo "badge skipped"
       - name: Build (web)
         run: npm --workspace web run build
+      - name: Analytics Chunk Size Budget
+        run: npm --workspace web run size:analytics || (echo "Analytics size budget failed" && exit 1)
       - name: Asset Manifest Diff (snapshot on main)
         run: |
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then

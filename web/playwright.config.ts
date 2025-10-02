@@ -25,7 +25,9 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     port: 5173,
     env: {
-      VITE_ENABLE_PREVIEW_GATE: 'false'
+      VITE_ENABLE_PREVIEW_GATE: 'false',
+      VITE_ENABLE_DRIFT_HARNESS: 'true',
+      VITE_ANALYTICS_ENDPOINT: '/__mock'
     }
   }
 });

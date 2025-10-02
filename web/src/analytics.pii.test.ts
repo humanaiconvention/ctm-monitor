@@ -40,4 +40,39 @@ describe('analytics PII sanitization', () => {
     expect(payload.userEmail).toBe('explicit@allowed.com');
     expect(payload.userId).toBe('1234');
   });
+
+  it('redacts emails in nested arrays and objects and handles circular references', () => {
+  const circular: Record<string, unknown> = { level1: { arr: [ 'first@example.com', { deeper: 'inner@mail.net' } ] } };
+    circular.self = circular; // introduce cycle
+    trackEvent({
+      category: 'interaction',
+      action: 'click',
+      label: 'pii-nested',
+      metadata: circular
+    });
+    const dl = window.dataLayer as unknown[];
+    expect(dl.length).toBe(1);
+    const payload = dl[0] as Record<string, unknown>;
+    const level1 = payload.level1 as Record<string, unknown>;
+    const arr = level1.arr as unknown[];
+    expect(String(arr[0])).toContain('[redacted-email]');
+    const deeperObj = arr[1] as Record<string, unknown>;
+    expect(String(deeperObj.deeper)).toContain('[redacted-email]');
+    // circular replaced
+    expect(payload.self).toBe('[circular]');
+  });
+
+  it('adds tooDeep flag when nesting exceeds depth budget', () => {
+    // Build > depth 4 nesting
+    const deep = { a: { b: { c: { d: { e: { email: 'too@deep.com' } } } } } };
+    trackEvent({ category: 'interaction', action: 'click', metadata: deep });
+    const dl = window.dataLayer as unknown[];
+  const payload = dl[0] as Record<string, unknown>;
+  const a = payload.a as Record<string, unknown>;
+  const b = a.b as Record<string, unknown>;
+  const c = b.c as Record<string, unknown>;
+  const d = c.d as Record<string, unknown>;
+  const e = d.e as Record<string, unknown>;
+  expect(e.tooDeep).toBe(true);
+  });
 });

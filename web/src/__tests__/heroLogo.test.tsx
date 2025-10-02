@@ -11,10 +11,10 @@ describe('Hero Logo', () => {
     // Render app; intro sequence may gate content. Ensure localStorage flag to skip intro.
     try { localStorage.setItem('hq:introComplete', 'true') } catch { /* ignore */ }
     render(<App />)
-  const logo = screen.getByLabelText(/HumanAI Convention logo/i)
-  expect(logo).toBeTruthy()
-  // Ensure logo SVG contains a <title> element for accessibility
-  const titleEl = logo.querySelector('title')
+  // There may now be multiple elements mentioning the logo (wrapper + svg). Select the SVG role img.
+  const logoImg = screen.getByRole('img', { name: /HumanAI Convention logo/i })
+  expect(logoImg).toBeTruthy()
+  const titleEl = logoImg.querySelector('title')
   expect(titleEl?.textContent).toMatch(/HumanAI Convention/i)
   })
 })
