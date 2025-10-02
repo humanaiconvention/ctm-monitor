@@ -1,0 +1,98 @@
+name: Power Pages Deploy (Dashboard)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: "Deployment mode: EMBED_IFRAME | STATIC_WEBFILES | EXTERNAL_CDN"
+        required: false
+        default: EMBED_IFRAME
+
+env:
+  NODE_VERSION: '20.x'
+  DASHBOARD_PATH: web/web/next-dashboard
+
+jobs:
+  build-export:
+    name: Build & Export Dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies (dashboard)
+        working-directory: ${{ env.DASHBOARD_PATH }}
+        run: npm ci
+
+      - name: Lint (dashboard)
+        working-directory: ${{ env.DASHBOARD_PATH }}
+        run: npm run lint -- --max-warnings=0
+
+      - name: Build & Export static
+        working-directory: ${{ env.DASHBOARD_PATH }}
+        run: npm run export:static
+
+      - name: Upload exported artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-static
+          path: ${{ env.DASHBOARD_PATH }}/out
+          retention-days: 7
+
+  deploy-power-pages:
+    name: Deploy to Power Pages
+    needs: build-export
+    runs-on: ubuntu-latest
+    environment: production
+    if: ${{ github.event.inputs.deploy_mode != 'EXTERNAL_CDN' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download static artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dashboard-static
+          path: dashboard-static
+
+      - name: Install Power Platform CLI
+        run: npm install -g pac@latest
+
+      - name: Power Platform Auth (Service Principal)
+        run: |
+          pac auth create \
+            --name ci \
+            --tenant ${{ secrets.POWERPLATFORM_TENANT_ID }} \
+            --applicationId ${{ secrets.POWERPLATFORM_CLIENT_ID }} \
+            --clientSecret ${{ secrets.POWERPLATFORM_CLIENT_SECRET }} \
+            --environment ${{ secrets.POWERPLATFORM_ENV_URL }}
+
+      - name: List portals (debug)
+        run: pac paportal list
+
+      # Placeholder logic: choose deployment strategy
+      - name: Deploy (placeholder)
+        run: |
+          echo "Deployment mode: ${{ github.event.inputs.deploy_mode }}"
+          echo "Implement upload of dashboard-static/* as Web Files or embed via an iframe in a Web Template."
+          echo "For STATIC_WEBFILES: iterate files and use 'pac paportal upload' once mapping is prepared."
+
+      - name: Logout
+        if: always()
+        run: pac auth clear
+
+  deploy-external-cdn-note:
+    name: External CDN Note
+    needs: build-export
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.deploy_mode == 'EXTERNAL_CDN' }}
+    steps:
+      - name: Instructions
+        run: |
+          echo "You selected EXTERNAL_CDN. Upload the artifact (dashboard-static) to your CDN (e.g., Azure Storage Static Website) and embed via iframe or script tag in Power Pages."
