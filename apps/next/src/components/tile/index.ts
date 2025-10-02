@@ -1,2 +1,2 @@
-export { ConsciousnessCore } from ./ConsciousnessCore;
-export type { } from ./ConsciousnessCore;
+export { ConsciousnessCore } from './ConsciousnessCore';
+// Re-export any types if needed (placeholder)
