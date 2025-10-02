@@ -1,11 +1,11 @@
 {
   "name": "humanaiconvention-monorepo",
   "private": true,
-  "workspaces": ["web"],
+  "workspaces": ["web", "apps/next"],
   "scripts": {
     "dev": "npm run dev --workspace web",
-    "dev:dashboard": "cd web/web/next-dashboard && npm run dev",
-  "export:dashboard": "cd web/web/next-dashboard && npm run export:static",
+    "dev:next": "npm run dev --workspace next-app",
+    "export:next": "npm run export:static --workspace next-app",
     "build": "npm run build --workspace web",
     "lint": "npm run lint --workspace web",
     "preview": "npm run preview --workspace web",
