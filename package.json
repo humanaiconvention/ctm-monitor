@@ -4,6 +4,7 @@
   "workspaces": ["web"],
   "scripts": {
     "dev": "npm run dev --workspace web",
+    "dev:dashboard": "cd web/web/next-dashboard && npm run dev",
     "build": "npm run build --workspace web",
     "lint": "npm run lint --workspace web",
     "preview": "npm run preview --workspace web",
