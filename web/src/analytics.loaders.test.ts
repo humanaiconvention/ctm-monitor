@@ -57,12 +57,16 @@ test('loadErrors produces errors chunk loaded event', async () => {
 });
 
 test('loadPerf skipped when saveData is true', async () => {
-  // Force new module state by re-importing analytics/index (cannot easily reset internal flags; use dynamic sandbox)
-  const saveDataNavigator = { deviceMemory: 4, connection: { saveData: true } } as unknown as Navigator;
-  Object.defineProperty(globalThis, 'navigator', { value: saveDataNavigator });
-  // Fresh import using a dynamic import to get a new closure scope.
-  const mod = await import('./analytics/index');
-  await mod.analyticsLoaders.loadPerf();
-  const calls = (trackEvent as unknown as ReturnType<typeof vi.fn>).mock.calls.map(c => c[0]);
+  vi.resetModules();
+  // Re-apply mock after reset
+  vi.doMock('./analytics/core', async () => {
+    const actual: Record<string, unknown> = await vi.importActual('./analytics/core');
+    return { ...actual, trackEvent: vi.fn() };
+  });
+  Object.defineProperty(globalThis, 'navigator', { value: { deviceMemory: 4, connection: { saveData: true } } });
+  const { analyticsLoaders } = await import('./analytics/index');
+  await analyticsLoaders.loadPerf();
+  const { trackEvent: newTrackEvent } = await import('./analytics/core');
+  const calls = (newTrackEvent as unknown as ReturnType<typeof vi.fn>).mock.calls.map(c => c[0]);
   expect(calls.some(e => e?.metadata?.metric === 'analytics_chunk_skipped' && e?.metadata?.chunk === 'perf')).toBe(true);
 });
