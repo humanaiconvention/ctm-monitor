@@ -100,7 +100,7 @@
     "@axe-core/playwright": "^4.10.0",
     "@cyclonedx/cyclonedx-npm": "4.0.3",
     "@eslint/js": "^9.36.0",
-    "@lhci/cli": "^0.14.0",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.48.0",
     "@resvg/resvg-js": "^2.6.2",
     "@storybook/addon-essentials": "^8.6.14",
