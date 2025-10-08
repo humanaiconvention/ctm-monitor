@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { render, act, cleanup } from '@testing-library/react'
 import App from '../App'
 
 // Minimal mock for gate component structure if lazy loaded within App
@@ -10,10 +10,17 @@ describe('intro gate visibility during pending phase', () => {
     // Simulate first visit: ensure flag not set
     try { localStorage.removeItem('hq:introComplete') } catch { /* ignore */ }
     document.body.className = ''
+    cleanup()
+  })
+
+  afterEach(() => {
+    cleanup()
   })
 
   it('renders a visible intro gate wrapper early in initial load', () => {
-    render(<App />)
+    act(() => {
+      render(<App />)
+    })
     const gate = document.querySelector('.intro-gate') as HTMLElement | null
     expect(gate).not.toBeNull()
     if (gate) {
