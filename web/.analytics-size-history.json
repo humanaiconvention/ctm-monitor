@@ -2195,6 +2195,604 @@
           "brotliKB": 0.15
         }
       }
+    },
+    {
+      "ts": "2025-10-08T05:59:46.194Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T05:59:52.376Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:01:21.026Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:01:28.446Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:02:07.880Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:02:14.192Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:02:33.640Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:02:39.915Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:03:04.612Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:03:10.911Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:21:56.671Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:22:03.020Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:22:51.863Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:22:58.383Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:27:21.410Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:27:27.916Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:28:54.167Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:29:00.698Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:31:05.581Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:31:12.375Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:32:38.248Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:32:45.806Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:35:01.989Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:35:08.329Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:36:40.879Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
+    },
+    {
+      "ts": "2025-10-08T06:36:50.707Z",
+      "sizes": {
+        "core": {
+          "gzipKB": 4.49,
+          "brotliKB": 4
+        },
+        "engagement": {
+          "gzipKB": 0.15,
+          "brotliKB": 0.12
+        },
+        "errors": {
+          "gzipKB": 0.4,
+          "brotliKB": 0.33
+        },
+        "extra": {
+          "gzipKB": 0.04,
+          "brotliKB": 0.02
+        },
+        "perf": {
+          "gzipKB": 0.19,
+          "brotliKB": 0.15
+        }
+      }
     }
   ]
 }

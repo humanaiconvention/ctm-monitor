@@ -9,3 +9,4 @@ pipeline within the `consciousness-explorer` workspace.
 """
 
 from .ingest_pdfs import ingest_corpus, main as cli  # noqa: F401
+from .simulator import simulate_fragment  # noqa: F401
