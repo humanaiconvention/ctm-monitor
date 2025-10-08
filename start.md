@@ -1,8 +1,9 @@
-Project snapshot — quick start
+
+# Project snapshot — quick start
 
 Purpose
 
-This file is a focused handoff for picking up work on the Humani Convention workspace (Explorer / Research / Flows / Tiles). Put this in the repo root so an engineer or an assistant can resume without digging through the entire codebase.
+This file is a focused handoff for picking up work on the HumanAI Convention workspace (Explorer / Research / Flows / Tiles). Put this in the repo root so an engineer or an assistant can resume without digging through the entire codebase.
 
 High-level architecture
 
