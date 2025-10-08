@@ -74,7 +74,17 @@ describe('PreviewIntroGate', () => {
   it('reduced motion mode shows CTA immediately', () => {
     const onComplete = vi.fn();
     // Mock matchMedia
-    (window as any).matchMedia = (query: string) => ({ matches: query.includes('prefers-reduced-motion'), media: query, addEventListener: () => {}, removeEventListener: () => {} });
+    const mockMatchMedia: typeof window.matchMedia = (query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => true,
+    });
+    Object.defineProperty(window, 'matchMedia', { writable: true, configurable: true, value: mockMatchMedia });
     act(() => { render(<PreviewIntroGate onComplete={onComplete} />); });
     expect(screen.getByRole('button', { name: /answer here/i })).toBeInTheDocument();
     // Skip exists in DOM though retired (aria-hidden) – use getByLabelText which respects aria-hidden so fallback to querySelector
@@ -88,7 +98,6 @@ describe('PreviewIntroGate', () => {
     const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
     const results = await axe(dialog || container);
     if (results.violations.length) {
-      // eslint-disable-next-line no-console
       console.warn('Contrast-inclusive violations:', results.violations.map(v => v.id));
     }
     expect(results.violations.filter(v => v.id !== 'color-contrast')).toHaveLength(0);

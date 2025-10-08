@@ -67,13 +67,13 @@ try {
         // Lazy load analytics only when actually needed (rare path)
         import('./analytics/index').then(m => {
           try {
-            (m.trackEvent as (o: any) => void)({
-              category: 'intro',
-              action: 'intro_safety_fallback',
-              metadata: { route: location.pathname, elapsedMs: safetyTimeoutMs }
-            });
-          } catch { /* ignore */ }
-        }).catch(()=>{});
+            m.trackEvent({
+               category: 'intro',
+               action: 'intro_safety_fallback',
+               metadata: { route: location.pathname, elapsedMs: safetyTimeoutMs }
+             });
+           } catch { /* ignore */ }
+         }).catch(()=>{});
       }, safetyTimeoutMs);
       // Cancel safety timeout early if gate mounts
       document.addEventListener('intro:gate-mounted', () => {
