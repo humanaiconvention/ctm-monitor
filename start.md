@@ -1,5 +1,14 @@
 # Project snapshot — quick start
 
+## Session log — 2025-10-09
+
+- Persistence adapters resolved via `modules/research/persistence/index.js`; Redis checkpoints and Postgres run logging now wired into `modules/research/stateGraphRunner.js`.
+- `recordResearchOutcome` persists metadata (wiki summary, persistence summaries/errors) without lint noise; stage checkpoints invoke `persistStage` helper.
+- Remaining Phase A1 todos: add `redis`, `pg`, `pgvector` dependencies; document env/config expectations; design validation/tests for persistence-enabled flow.
+- No tests executed this session; ensure lint/test passes after dependency updates.
+
+## Project snapshot — quick start
+
 Purpose
 
 This file is a focused handoff for picking up work on the HumanAI Convention workspace (Explorer / Research / Flows / Tiles). Put this in the repo root so an engineer or an assistant can resume without digging through the entire codebase.

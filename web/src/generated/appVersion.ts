@@ -2,9 +2,9 @@
 export const APP_VERSION = {
   "name": "web",
   "version": "0.3.2",
-  "commit": "7abcb955e0a1",
-  "fullCommit": "7abcb955e0a193c4ace89f86e0dbe54baefd6ba5",
-  "buildRev": "0.3.2+7abcb955e0a1.20251008",
+  "commit": "fdf0190fe827",
+  "fullCommit": "fdf0190fe827b9df8d021c2c9c82a1bef0762d5e",
+  "buildRev": "0.3.2+fdf0190fe827.20251010",
   "logoHash": "2c4258137a47edc3"
   "commit": "d0bb15d53b9fddeb5ed7adcbf208daa69927503c",
   "fullCommit": "d0bb15d53b9fddeb5ed7adcbf208daa69927503c",
