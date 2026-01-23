@@ -1,0 +1,24 @@
+
+# Exclude Python cache
+__pycache__/
+*.pyc
+
+# Exclude large models
+models/
+*.safetensors
+*.pt
+*.bin
+
+# Exclude personal grounding logs (Privacy)
+lived_experience_log.json
+lived_experience_history.json
+training_data_cycle_*.json
+
+# Exclude deployment packages
+examiner_v*_gcp_deploy/
+
+# Exclude data
+data/
+corpus/
+logs/
+1-11-26 test run 1/
