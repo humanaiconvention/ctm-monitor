@@ -1,174 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CTM Monitor</title>
+  <title>Examiner-CTM Training Monitor</title>
+  <meta name="description" content="Real-time training monitor for Examiner-CTM - watch an AI learn across 7 cognitive domains">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
-    body { margin: 0; background: #0a0a0c; color: #e0e0e0; }
+    body {
+      margin: 0;
+      background: #0a0a0c;
+      color: #e0e0e0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 5px currentColor; }
+      50% { box-shadow: 0 0 15px currentColor, 0 0 20px currentColor; }
+    }
+
+    .pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes gradient-animate {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .gradient-animate {
+      background-size: 200% 200%;
+      animation: gradient-animate 3s ease infinite;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #444;
+    }
   </style>
 </head>
 <body>
-  <div class="min-h-screen bg-gradient-to-b from-[#0a0a0c] to-[#050507] text-white p-6">
-    <div class="max-w-4xl mx-auto space-y-6">
-      <h1 class="text-3xl font-bold">Examiner-CTM Training Monitor</h1>
-
-      <div id="status" class="p-4 bg-[#111113] border border-white/10 rounded-lg">
-        <div class="text-sm text-gray-500">STATUS</div>
-        <div id="status-text" class="text-lg font-mono mt-2">Loading...</div>
-      </div>
-
-      <div id="data" class="p-4 bg-[#111113] border border-white/10 rounded-lg">
-        <div class="text-sm text-gray-500 mb-2">LATEST DATA</div>
-        <pre id="data-text" class="text-xs font-mono overflow-auto max-h-96 text-gray-300">Fetching...</pre>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="p-4 bg-[#111113] border border-white/10 rounded-lg">
-          <div class="text-sm text-gray-500 mb-4">TRAINING DYNAMICS</div>
-          <canvas id="chart" height="80"></canvas>
-        </div>
-
-        <div class="p-4 bg-[#111113] border border-white/10 rounded-lg h-80 flex flex-col justify-center items-center">
-          <svg id="lattice" width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" style="max-height:300px">
-            <defs>
-              <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:0.8" />
-                <stop offset="100%" style="stop-color:#000;stop-opacity:0" />
-              </radialGradient>
-            </defs>
-            <circle cx="100" cy="100" r="40" fill="url(#coreGlow)"/>
-            <circle cx="100" cy="100" r="8" fill="#0a0a0c" stroke="#22d3ee" stroke-width="1.5"/>
-            <text x="100" y="108" text-anchor="middle" font-size="6" fill="#fff" font-family="monospace">L4</text>
-          </svg>
-          <div class="text-xs text-gray-500 mt-2">Liquid Lattice Core</div>
-        </div>
-      </div>
-
-      <div id="logs" class="p-4 bg-[#111113] border border-white/10 rounded-lg">
-        <div class="text-sm text-gray-500 mb-2">LOG STREAM</div>
-        <div id="log-text" class="text-xs font-mono space-y-1 max-h-64 overflow-y-auto">Waiting for data...</div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const DATA_URL = './data/metrics.jsonl';
-    let chartInstance = null;
-    let allEntries = [];
-
-    async function fetchData() {
-      try {
-        const response = await fetch(DATA_URL + '?t=' + Date.now());
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const text = await response.text();
-        const lines = text.split('\n').filter(l => l.trim());
-        allEntries = lines.map(line => {
-          try {
-            const cleaned = line.replace(/:\s*NaN/g, ': null');
-            return JSON.parse(cleaned);
-          } catch { return null; }
-        }).filter(e => e && typeof e.step === 'number');
-
-        if (allEntries.length === 0) {
-          document.getElementById('status-text').textContent = 'No data loaded';
-          return;
-        }
-
-        const latest = allEntries[allEntries.length - 1];
-        const time = new Date().toLocaleTimeString();
-
-        document.getElementById('status-text').textContent =
-          `Step ${latest.step} | Loss: ${latest.loss === null ? 'NaN' : latest.loss.toFixed(4)} | Reward: ${latest.reward.toFixed(3)} | Updated: ${time}`;
-
-        document.getElementById('data-text').textContent = JSON.stringify(latest, null, 2);
-
-        const logHtml = allEntries.slice(-20).reverse().map((e, i) =>
-          `<div class="text-gray-400">[${new Date(e.timestamp).toLocaleTimeString()}] Step ${e.step} | ${e.domain} | Loss: ${e.loss === null ? 'NaN' : e.loss.toFixed(4)} | Reward: ${e.reward.toFixed(2)}</div>`
-        ).join('');
-        document.getElementById('log-text').innerHTML = logHtml;
-
-        updateChart();
-        updateLattice(latest);
-
-        document.getElementById('status-text').parentElement.parentElement.classList.remove('border-red-500/50');
-        document.getElementById('status-text').parentElement.parentElement.classList.add('border-green-500/50');
-      } catch (err) {
-        document.getElementById('status-text').textContent = 'ERROR: ' + err.message;
-        document.getElementById('status-text').parentElement.parentElement.classList.add('border-red-500/50');
-        console.error(err);
-      }
-    }
-
-    function updateChart() {
-      const ctx = document.getElementById('chart').getContext('2d');
-      const last50 = allEntries.slice(-50);
-
-      const chartData = {
-        labels: last50.map(e => `#${e.step}`),
-        datasets: [
-          {
-            label: 'Loss',
-            data: last50.map(e => e.loss === null ? null : e.loss),
-            borderColor: '#22d3ee',
-            backgroundColor: 'rgba(34, 211, 238, 0.1)',
-            tension: 0.1,
-            yAxisID: 'y'
-          },
-          {
-            label: 'Reward',
-            data: last50.map(e => e.reward),
-            borderColor: '#facc15',
-            backgroundColor: 'rgba(250, 204, 21, 0.1)',
-            tension: 0.1,
-            yAxisID: 'y1'
-          }
-        ]
-      };
-
-      if (chartInstance) {
-        chartInstance.data = chartData;
-        chartInstance.update();
-      } else {
-        chartInstance = new Chart(ctx, {
-          type: 'line',
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { labels: { color: '#999' } } },
-            scales: {
-              y: { title: { display: true, text: 'Loss', color: '#22d3ee' }, ticks: { color: '#666' }, grid: { color: '#222' } },
-              y1: { position: 'right', title: { display: true, text: 'Reward', color: '#facc15' }, ticks: { color: '#666' }, grid: { drawOnChartArea: false } },
-              x: { ticks: { color: '#666' }, grid: { color: '#222' } }
-            }
-          }
-        });
-      }
-    }
-
-    function updateLattice(latest) {
-      const domains = ['LOGOS', 'PHYSIS', 'BIOS', 'NOMOS', 'PSYCHE', 'SOPHIA', 'OIKOS'];
-      const colors = ['#10b981', '#3b82f6', '#84cc16', '#ef4444', '#d946ef', '#f59e0b', '#06b6d4'];
-      const activeDomain = latest.domain;
-      const idx = domains.indexOf(activeDomain);
-      const activeColor = idx >= 0 ? colors[idx] : '#22d3ee';
-
-      let svg = document.getElementById('lattice');
-      const coreGlow = svg.querySelector('radialGradient');
-      const stop0 = coreGlow.querySelector('stop:first-child');
-      stop0.setAttribute('style', `stop-color:${activeColor};stop-opacity:0.8`);
-
-      const centerCircle = svg.querySelector('circle:last-of-type');
-      centerCircle.setAttribute('stroke', activeColor);
-    }
-
-    fetchData();
-    setInterval(fetchData, 5000);
-  </script>
+  <div id="root"></div>
+  <script src="app.bundle.js"></script>
 </body>
 </html>
