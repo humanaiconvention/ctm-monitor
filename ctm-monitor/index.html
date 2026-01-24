@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.0 -->
+<!-- v3.1 - error handling -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -639,14 +639,16 @@
 
       container.innerHTML = recent.map((e, i) => {
         const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '--:--';
-        const loss = e.loss === null ? 'NaN' : e.loss?.toFixed(2);
+        const loss = (e.loss == null) ? 'NaN' : Number(e.loss).toFixed(2);
+        const reward = (e.reward == null) ? '---' : Number(e.reward).toFixed(2);
+        const epsilon = (e.epsilon == null) ? '---' : Number(e.epsilon).toFixed(3);
         const color = DOMAINS[e.domain]?.color || '#fff';
         return `
           <div class="log-entry">
             <span class="log-time">${time}</span>
             <span class="log-step">#${e.step}</span>
-            <span class="log-domain" style="color: ${color}">${e.domain}</span>
-            <span class="log-metrics">L:${loss} R:${e.reward?.toFixed(2)} ε:${e.epsilon?.toFixed(3)}</span>
+            <span class="log-domain" style="color: ${color}">${e.domain || '---'}</span>
+            <span class="log-metrics">L:${loss} R:${reward} ε:${epsilon}</span>
           </div>
         `;
       }).join('');
@@ -656,15 +658,17 @@
 
     function updateHero(e) {
       if (!e) return;
-
-      document.getElementById('hero-step').textContent = e.step.toLocaleString();
-      document.getElementById('hero-loss').textContent = e.loss === null ? 'NaN' : e.loss?.toFixed(4);
-      document.getElementById('hero-reward').textContent = e.reward?.toFixed(3);
-      document.getElementById('hero-epsilon').textContent = e.epsilon?.toFixed(4);
-      document.getElementById('hero-depth').textContent = e.thinking_depth || '---';
-
-      document.getElementById('status-text').textContent = `Step ${e.step}`;
-      document.getElementById('status-dot').style.background = '#10b981';
+      try {
+        document.getElementById('hero-step').textContent = e.step ? e.step.toLocaleString() : '---';
+        document.getElementById('hero-loss').textContent = (e.loss == null) ? 'NaN' : Number(e.loss).toFixed(4);
+        document.getElementById('hero-reward').textContent = (e.reward == null) ? '---' : Number(e.reward).toFixed(3);
+        document.getElementById('hero-epsilon').textContent = (e.epsilon == null) ? '---' : Number(e.epsilon).toFixed(4);
+        document.getElementById('hero-depth').textContent = e.thinking_depth || '---';
+        document.getElementById('status-text').textContent = `Step ${e.step || '---'}`;
+        document.getElementById('status-dot').style.background = '#10b981';
+      } catch (err) {
+        console.error('updateHero error:', err);
+      }
     }
 
     let lastStep = 0;
@@ -699,12 +703,20 @@
       }
     }
 
-    // Init
-    createDomainRing();
-    createDomainBars();
-    initChart();
-    fetchData();
-    setInterval(fetchData, 5000);
+    // Init with error handling
+    try {
+      createDomainRing();
+      createDomainBars();
+      initChart();
+      fetchData();
+      setInterval(fetchData, 5000);
+    } catch (err) {
+      console.error('Init error:', err);
+      document.body.innerHTML = `<div style="padding:40px;font-family:monospace;color:#ef4444;">
+        <h2>Initialization Error</h2>
+        <pre>${err.message}\n${err.stack}</pre>
+      </div>`;
+    }
   </script>
 </body>
 </html>
