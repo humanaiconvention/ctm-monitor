@@ -1,61 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Examiner-CTM Training Monitor</title>
-  <meta name="description" content="Real-time monitoring dashboard for Examiner-CTM v5.1 training on L4 GPU">
+  <title>CTM Monitor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
-
-    body {
-      margin: 0;
-      background: linear-gradient(to bottom, #0a0a0c 0%, #050507 100%);
-      color: #e0e0e0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    #root { min-height: 100vh; display: flex; flex-direction: column; }
-    .font-mono { font-family: 'JetBrains Mono', monospace !important; }
-
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #0a0a0c; }
-    ::-webkit-scrollbar-thumb { background: #1e1e22; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #2a2a2e; }
-
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 10px rgba(34, 211, 238, 0.3); }
-      50% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.6); }
-    }
-    .pulse-glow { animation: pulse-glow 2s infinite; }
-
-    @keyframes gradient-shift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    .gradient-animate {
-      background-size: 200% 200%;
-      animation: gradient-shift 8s ease infinite;
-    }
+    body { margin: 0; background: #0a0a0c; color: #e0e0e0; }
   </style>
 </head>
 <body>
-  <div id="root" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0a0a0c;color:#e0e0e0;font-family:monospace;">Loading CTM Monitor...</div>
-  <script src="./app.bundle.js"></script>
+  <div class="min-h-screen bg-gradient-to-b from-[#0a0a0c] to-[#050507] text-white p-6">
+    <div class="max-w-4xl mx-auto space-y-6">
+      <h1 class="text-3xl font-bold">Examiner-CTM Training Monitor</h1>
+
+      <div id="status" class="p-4 bg-[#111113] border border-white/10 rounded-lg">
+        <div class="text-sm text-gray-500">STATUS</div>
+        <div id="status-text" class="text-lg font-mono mt-2">Loading...</div>
+      </div>
+
+      <div id="data" class="p-4 bg-[#111113] border border-white/10 rounded-lg">
+        <div class="text-sm text-gray-500 mb-2">LATEST DATA</div>
+        <pre id="data-text" class="text-xs font-mono overflow-auto max-h-96 text-gray-300">Fetching...</pre>
+      </div>
+
+      <div id="logs" class="p-4 bg-[#111113] border border-white/10 rounded-lg">
+        <div class="text-sm text-gray-500 mb-2">LOG STREAM</div>
+        <div id="log-text" class="text-xs font-mono space-y-1 max-h-64 overflow-y-auto">Waiting for data...</div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    window.addEventListener('error', e => {
-      document.getElementById('root').innerHTML = '<div style="padding:20px;color:#ff6b6b"><h1>Error Loading App</h1><pre>' + e.message + '</pre></div>';
-    });
-    setTimeout(() => {
-      if (!document.querySelector('[class*="flex"]')) {
-        document.getElementById('root').innerHTML = '<div style="padding:20px;color:#ff6b6b">Failed to load app. Check console.</div>';
+    const DATA_URL = './data/metrics.jsonl';
+    let lastFetchTime = 0;
+
+    async function fetchData() {
+      try {
+        const response = await fetch(DATA_URL + '?t=' + Date.now());
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const text = await response.text();
+        const lines = text.split('\n').filter(l => l.trim());
+        const entries = lines.map(line => {
+          try {
+            const cleaned = line.replace(/:\s*NaN/g, ': null');
+            return JSON.parse(cleaned);
+          } catch { return null; }
+        }).filter(e => e && typeof e.step === 'number');
+
+        if (entries.length === 0) {
+          document.getElementById('status-text').textContent = 'No data loaded';
+          return;
+        }
+
+        const latest = entries[entries.length - 1];
+        const time = new Date().toLocaleTimeString();
+
+        document.getElementById('status-text').textContent =
+          `Step ${latest.step} | Loss: ${latest.loss === null ? 'NaN' : latest.loss.toFixed(4)} | Reward: ${latest.reward.toFixed(3)} | Updated: ${time}`;
+
+        document.getElementById('data-text').textContent = JSON.stringify(latest, null, 2);
+
+        const logHtml = entries.slice(-20).reverse().map((e, i) =>
+          `<div class="text-gray-400">[${new Date(e.timestamp).toLocaleTimeString()}] Step ${e.step} | ${e.domain} | Loss: ${e.loss === null ? 'NaN' : e.loss.toFixed(4)} | Reward: ${e.reward.toFixed(2)}</div>`
+        ).join('');
+        document.getElementById('log-text').innerHTML = logHtml;
+
+        document.getElementById('status-text').parentElement.parentElement.classList.remove('border-red-500/50');
+        document.getElementById('status-text').parentElement.parentElement.classList.add('border-green-500/50');
+      } catch (err) {
+        document.getElementById('status-text').textContent = 'ERROR: ' + err.message;
+        document.getElementById('status-text').parentElement.parentElement.classList.add('border-red-500/50');
+        console.error(err);
       }
-    }, 3000);
+    }
+
+    fetchData();
+    setInterval(fetchData, 5000);
   </script>
 </body>
 </html>
