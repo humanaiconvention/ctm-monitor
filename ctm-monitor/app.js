@@ -605,7 +605,7 @@ const App = () => {
   const previous = logs[logs.length - 2] || latest;
   const lossDelta = (latest && previous) ? latest.loss - previous.loss : 0;
 
-  const displayLoss = latest ? latest.loss.toFixed(5) : "---";
+  const displayLoss = latest ? (latest.loss == null ? "NaN" : latest.loss.toFixed(5)) : "---";
   const displayReward = latest ? latest.reward.toFixed(3) : "---";
   const displayMem = latest ? latest.gpu_mem_gb?.toFixed(1) || "---" : "---";
   const displayStep = latest ? latest.step.toLocaleString() : "---";
@@ -874,7 +874,7 @@ const App = () => {
                 <span className="text-cyan-600">STEP {log.step}</span>
                 <span className="text-purple-400">[{log.domain}]</span>
                 <span className="text-gray-400">
-                  Loss: <span className="text-gray-300">{log.loss.toFixed(4)}</span>
+                  Loss: <span className="text-gray-300">{log.loss == null ? "NaN" : log.loss.toFixed(4)}</span>
                 </span>
                 <span className="text-gray-500">|</span>
                 <span className="text-gray-400">
