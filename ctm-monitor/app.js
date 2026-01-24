@@ -98,7 +98,7 @@ const ManifoldLattice = ({ activeDomain, epsilon, loss, thinkingDepth }) => {
         </div>
         <div className="text-right">
           <div className="text-xs font-mono text-purple-400">{activeDomain || "IDLE"}</div>
-          <div className="text-[10px] text-gray-600">Depth: {thinkingDepth} | ε: {epsilon.toFixed(3)}</div>
+          <div className="text-[10px] text-gray-600">Depth: {thinkingDepth} | ε: {epsilon != null ? epsilon.toFixed(3) : "---"}</div>
         </div>
       </div>
 
@@ -310,7 +310,7 @@ const PillarsTile = ({ log }) => {
                   <div className="space-y-1">
                     <div className="flex justify-between text-[10px]">
                       <span className="text-gray-500">Reward</span>
-                      <span className={log.reward > 0 ? "text-green-400" : "text-red-400"}>{log.reward.toFixed(3)}</span>
+                      <span className={log.reward > 0 ? "text-green-400" : "text-red-400"}>{log.reward != null ? log.reward.toFixed(3) : "---"}</span>
                     </div>
                     <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
                       <div
@@ -603,10 +603,10 @@ const App = () => {
 
   const latest = logs[logs.length - 1] || null;
   const previous = logs[logs.length - 2] || latest;
-  const lossDelta = (latest && previous) ? latest.loss - previous.loss : 0;
+  const lossDelta = (latest && previous && latest.loss != null && previous.loss != null) ? latest.loss - previous.loss : 0;
 
   const displayLoss = latest ? (latest.loss == null ? "NaN" : latest.loss.toFixed(5)) : "---";
-  const displayReward = latest ? latest.reward.toFixed(3) : "---";
+  const displayReward = latest ? (latest.reward != null ? latest.reward.toFixed(3) : "---") : "---";
   const displayMem = latest ? latest.gpu_mem_gb?.toFixed(1) || "---" : "---";
   const displayStep = latest ? latest.step.toLocaleString() : "---";
   const displayEpsilon = latest ? latest.epsilon?.toFixed(4) || "---" : "---";
@@ -878,7 +878,7 @@ const App = () => {
                 </span>
                 <span className="text-gray-500">|</span>
                 <span className="text-gray-400">
-                  Rew: <span className={log.reward > 0 ? "text-green-400" : "text-red-400"}>{log.reward.toFixed(3)}</span>
+                  Rew: <span className={log.reward > 0 ? "text-green-400" : "text-red-400"}>{log.reward != null ? log.reward.toFixed(3) : "---"}</span>
                 </span>
               </div>
             ))}
