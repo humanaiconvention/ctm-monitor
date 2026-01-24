@@ -14,7 +14,7 @@ import {
 const VERSION = "v1.0.0";
 const DEFAULT_POLL_INTERVAL = 5000;
 const MAX_HISTORY_POINTS = 800;
-const DEFAULT_UPLINK_URL = "https://raw.githubusercontent.com/humanaiconvention/ctm-monitor/main/parallel_training_metrics.jsonl";
+const DEFAULT_UPLINK_URL = "./data/metrics.jsonl";
 const TRAINING_STEP_TARGET = 3000;
 
 // Pillar Configuration - 7 Sovereign Pillars
