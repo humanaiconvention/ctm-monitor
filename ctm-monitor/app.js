@@ -510,7 +510,11 @@ const App = () => {
       .split('\n')
       .filter(line => line.trim())
       .map(line => {
-        try { return JSON.parse(line); }
+        try {
+          // Replace NaN with null for valid JSON
+          const cleaned = line.replace(/:\s*NaN/g, ': null');
+          return JSON.parse(cleaned);
+        }
         catch (e) { return null; }
       })
       .filter(entry => entry !== null && typeof entry.step === 'number');

@@ -47990,7 +47990,8 @@ var CTMMonitor = (() => {
     const parseJSONL = (text) => {
       return text.split("\n").filter((line) => line.trim()).map((line) => {
         try {
-          return JSON.parse(line);
+          const cleaned = line.replace(/:\s*NaN/g, ": null");
+          return JSON.parse(cleaned);
         } catch (e) {
           return null;
         }
