@@ -531,6 +531,7 @@ const App = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [bytesRead, setBytesRead] = useState(0);
   const [debugLog, setDebugLog] = useState(null);
+  const [trainingRun, setTrainingRun] = useState('LIVE'); // 'LIVE' or 'TRAINING_1'
 
   const parseJSONL = (text) => {
     return text
@@ -547,8 +548,67 @@ const App = () => {
       .filter(entry => entry !== null && typeof entry.step === 'number');
   };
 
+  const detectCollapseSignatures = (data) => {
+    // Detect collapse: reward declining while loss stable
+    // Returns array of steps where collapse was detected
+    if (data.length < 50) return [];
+
+    const collapseSteps = [];
+    const window = 50;
+
+    for (let i = window; i < data.length; i++) {
+      const recentData = data.slice(i - window, i);
+      const rewards = recentData.map(d => d.reward).filter(r => r != null);
+      const losses = recentData.map(d => d.loss).filter(l => l != null);
+
+      if (rewards.length < window * 0.5 || losses.length < window * 0.5) continue;
+
+      // Simple trend: compare first half vs second half
+      const mid = Math.floor(window / 2);
+      const firstRewards = rewards.slice(0, mid);
+      const secondRewards = rewards.slice(mid);
+      const firstLosses = losses.slice(0, mid);
+      const secondLosses = losses.slice(mid);
+
+      const rewardTrend = (secondRewards.reduce((a,b) => a+b, 0) / secondRewards.length) -
+                          (firstRewards.reduce((a,b) => a+b, 0) / firstRewards.length);
+      const lossTrend = (secondLosses.reduce((a,b) => a+b, 0) / secondLosses.length) -
+                        (firstLosses.reduce((a,b) => a+b, 0) / firstLosses.length);
+
+      // Collapse signature: reward declining, loss stable
+      if (rewardTrend < -0.01 && Math.abs(lossTrend) < 0.02) {
+        collapseSteps.push(data[i].step);
+      }
+    }
+
+    return collapseSteps;
+  };
+
   useEffect(() => {
-    if (dataMode === 'LOCAL_FILE') return;
+    // Load Training 1 historical data
+    if (trainingRun === 'TRAINING_1' && logs.length === 0) {
+      const loadTraining1 = async () => {
+        try {
+          const response = await fetch('./data/training_1.jsonl');
+          const text = await response.text();
+          setBytesRead(text.length);
+          const parsed = parseJSONL(text);
+          if (parsed.length > 0) {
+            setLogs(parsed.slice(-MAX_HISTORY_POINTS));
+            setErrorMsg(null);
+            setIsPolling(false);
+          }
+        } catch (err) {
+          console.error('[CTM] Failed to load Training 1:', err);
+          setErrorMsg(`Failed to load Training 1: ${err.message}`);
+        }
+      };
+      loadTraining1();
+      return;
+    }
+
+    // Live polling mode
+    if (dataMode === 'LOCAL_FILE' || trainingRun === 'TRAINING_1') return;
 
     const intervalId = setInterval(async () => {
       setIsPolling(true);
@@ -609,7 +669,7 @@ const App = () => {
     }, DEFAULT_POLL_INTERVAL);
 
     return () => clearInterval(intervalId);
-  }, [dataMode, liveUrl]);
+  }, [dataMode, liveUrl, trainingRun]);
 
   const handleFileLoad = (file) => {
     const reader = new FileReader();
@@ -662,13 +722,40 @@ const App = () => {
           <div className="h-4 w-px bg-white/10" />
           <span className="text-xs text-gray-500 font-mono">{VERSION}</span>
 
-          <div
-            onClick={() => setIsModalOpen(true)}
-            className={`hidden md:flex items-center space-x-2 text-xs font-mono px-2 py-1 rounded cursor-pointer transition border ${dataMode === 'LIVE_URL' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-purple-500/10 border-purple-500/30 text-purple-400'}`}
-          >
-            {dataMode === 'LIVE_URL' && <Globe className="w-3 h-3" />}
-            {dataMode === 'LOCAL_FILE' && <FileUp className="w-3 h-3" />}
-            <span>{dataMode === 'LIVE_URL' ? 'LIVE' : 'LOCAL'}</span>
+          <div className="hidden md:flex items-center space-x-3">
+            {/* Training Run Selector */}
+            <div className="flex items-center space-x-1 bg-gray-900/40 border border-white/10 rounded px-1 py-0.5">
+              <button
+                onClick={() => { setTrainingRun('TRAINING_1'); setLogs([]); }}
+                className={`text-xs font-mono px-2 py-1 rounded transition ${
+                  trainingRun === 'TRAINING_1'
+                    ? 'bg-orange-500/30 text-orange-400 border border-orange-500/50'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                Training 1 (Collapse)
+              </button>
+              <div className="h-4 w-px bg-white/10" />
+              <button
+                onClick={() => { setTrainingRun('LIVE'); setErrorMsg(null); }}
+                className={`text-xs font-mono px-2 py-1 rounded transition ${
+                  trainingRun === 'LIVE'
+                    ? 'bg-cyan-500/30 text-cyan-400 border border-cyan-500/50'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                Live Stream
+              </button>
+            </div>
+
+            <div
+              onClick={() => setIsModalOpen(true)}
+              className={`flex items-center space-x-2 text-xs font-mono px-2 py-1 rounded cursor-pointer transition border ${dataMode === 'LIVE_URL' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-purple-500/10 border-purple-500/30 text-purple-400'}`}
+            >
+              {dataMode === 'LIVE_URL' && <Globe className="w-3 h-3" />}
+              {dataMode === 'LOCAL_FILE' && <FileUp className="w-3 h-3" />}
+              <span>{dataMode === 'LIVE_URL' ? 'LIVE' : 'LOCAL'}</span>
+            </div>
           </div>
 
           {errorMsg && (
@@ -781,6 +868,54 @@ const App = () => {
             flash={isPolling}
           />
         </div>
+
+        {/* Collapse Detection Banner (Training 1) */}
+        {trainingRun === 'TRAINING_1' && logs.length > 0 && (() => {
+          const collapseSteps = detectCollapseSignatures(logs);
+          if (collapseSteps.length > 0) {
+            const firstCollapse = collapseSteps[0];
+            const totalSteps = logs[logs.length - 1]?.step || 0;
+            return (
+              <div className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border border-orange-500/50 rounded-lg p-4 shadow-lg shadow-orange-500/10">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse mt-1" />
+                    <div>
+                      <h3 className="text-sm font-mono text-orange-400 uppercase tracking-wider font-bold">COLLAPSE SIGNATURE DETECTED (Tell-Tail)</h3>
+                      <p className="text-xs text-orange-300 mt-1">
+                        Training 1 shows semantic collapse pattern: declining OOD accuracy (reward) with stable internal loss
+                      </p>
+                      <div className="flex gap-6 mt-2 text-xs font-mono">
+                        <div>
+                          <span className="text-gray-500">First detected at step:</span>
+                          <span className="text-orange-400 ml-2 font-bold">{firstCollapse.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Total signatures found:</span>
+                          <span className="text-orange-400 ml-2 font-bold">{collapseSteps.length}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Training run duration:</span>
+                          <span className="text-orange-400 ml-2 font-bold">{totalSteps.toLocaleString()} steps</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-orange-500 mt-2 italic">
+                        This is the temporal signature from Haslam (2025): C_eff(t) dropped below E(t), indicating loss of corrective capacity
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setTrainingRun('LIVE')}
+                    className="px-3 py-1 text-xs font-mono bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-400 rounded transition"
+                  >
+                    VIEW LIVE
+                  </button>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Auto-Grounding Intervention Status (v5.2) */}
         <div className="bg-gradient-to-br from-[#1a1a2e] via-[#111113] to-[#0a0a0c] border border-emerald-500/30 rounded-lg p-4 shadow-lg shadow-emerald-500/10">
