@@ -534,13 +534,16 @@ const App = () => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
+        console.log('[CTM] Fetching:', targetUrl);
         const response = await fetch(targetUrl, {
           signal: controller.signal,
           headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
         });
         clearTimeout(timeoutId);
+        console.log('[CTM] Response status:', response.status, response.ok);
 
         const rawText = await response.text();
+        console.log('[CTM] Bytes received:', rawText.length);
 
         const capturedDebug = {
           timestamp: new Date().toISOString(),
@@ -557,13 +560,22 @@ const App = () => {
 
         setBytesRead(rawText.length);
         const parsed = parseJSONL(rawText);
+        console.log('[CTM] Parsed entries:', parsed.length);
 
         if (parsed.length > 0) {
           setLogs(parsed.slice(-MAX_HISTORY_POINTS));
           setErrorMsg(null);
         }
       } catch (err) {
+        console.error('[CTM] Fetch error:', err.name, err.message, err);
         setErrorMsg(`Connection error: ${err.message}`);
+        setDebugLog({
+          timestamp: new Date().toISOString(),
+          url: targetUrl,
+          status: 'ERROR',
+          message: `${err.name}: ${err.message}`,
+          rawResponse: err.stack || ''
+        });
       }
 
       setTimeout(() => setIsPolling(false), 800);
