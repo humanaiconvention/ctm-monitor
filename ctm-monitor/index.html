@@ -4,55 +4,509 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Examiner-CTM Training Monitor</title>
-  <meta name="description" content="Real-time training monitor for Examiner-CTM - watch an AI learn across 7 cognitive domains">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    body {
-      margin: 0;
-      background: #0a0a0c;
-      color: #e0e0e0;
-      font-family: system-ui, -apple-system, sans-serif;
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0a0a0c; color: #e0e0e0; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes glow { 0%, 100% { filter: drop-shadow(0 0 8px currentColor); } 50% { filter: drop-shadow(0 0 20px currentColor); } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse-ring { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
+    @keyframes data-flash { 0% { background: rgba(34, 211, 238, 0.3); } 100% { background: transparent; } }
+
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    .glow { animation: glow 2s ease-in-out infinite; }
+    .spin { animation: spin 20s linear infinite; }
+    .data-flash { animation: data-flash 0.5s ease-out; }
+
+    .stat-card {
+      background: linear-gradient(135deg, #111113 0%, #0a0a0c 100%);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent, #22d3ee), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .stat-card.active::before { opacity: 1; }
+    .stat-card.active { border-color: var(--accent, #22d3ee); box-shadow: 0 0 30px rgba(34, 211, 238, 0.1); }
+
+    .domain-node {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .domain-node:hover { transform: scale(1.1); }
+    .domain-node.active { filter: drop-shadow(0 0 10px currentColor); }
+
+    .log-entry {
+      padding: 8px 12px;
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .log-entry:first-child {
+      background: rgba(34, 211, 238, 0.05);
+      border-left-color: #22d3ee;
     }
 
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 5px currentColor; }
-      50% { box-shadow: 0 0 15px currentColor, 0 0 20px currentColor; }
-    }
-
-    .pulse-glow {
-      animation: pulse-glow 2s ease-in-out infinite;
-    }
-
-    @keyframes gradient-animate {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    .gradient-animate {
-      background-size: 200% 200%;
-      animation: gradient-animate 3s ease infinite;
-    }
-
-    /* Scrollbar styling */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #111;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #333;
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #444;
-    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
-  <script src="app.bundle.js"></script>
+  <div class="min-h-screen bg-gradient-to-b from-[#0a0a0c] via-[#0d0d10] to-[#050507]">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 backdrop-blur-xl bg-[#0a0a0c]/80 border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <div id="status-dot" class="w-3 h-3 rounded-full bg-gray-600"></div>
+            <span class="text-lg font-bold tracking-tight">EXAMINER-CTM</span>
+          </div>
+          <div class="h-6 w-px bg-white/20"></div>
+          <span class="text-xs text-gray-500">Training Monitor v2.0</span>
+        </div>
+        <div class="flex items-center gap-6 text-xs">
+          <div id="header-step" class="text-cyan-400">Step: ---</div>
+          <div id="header-time" class="text-gray-500">--:--:--</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <!-- Hero Stats Row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="stat-card" style="--accent: #22d3ee">
+          <div class="text-xs text-gray-500 uppercase tracking-wider mb-2">Training Step</div>
+          <div id="stat-step" class="text-3xl font-bold text-white">---</div>
+          <div class="text-xs text-gray-600 mt-1">Global iteration</div>
+        </div>
+        <div class="stat-card" style="--accent: #facc15">
+          <div class="text-xs text-gray-500 uppercase tracking-wider mb-2">Loss</div>
+          <div id="stat-loss" class="text-3xl font-bold text-cyan-400">---</div>
+          <div id="stat-loss-delta" class="text-xs text-gray-600 mt-1">---</div>
+        </div>
+        <div class="stat-card" style="--accent: #10b981">
+          <div class="text-xs text-gray-500 uppercase tracking-wider mb-2">Reward</div>
+          <div id="stat-reward" class="text-3xl font-bold text-yellow-400">---</div>
+          <div class="text-xs text-gray-600 mt-1">Signal strength</div>
+        </div>
+        <div class="stat-card" style="--accent: #a855f7">
+          <div class="text-xs text-gray-500 uppercase tracking-wider mb-2">Active Domain</div>
+          <div id="stat-domain" class="text-3xl font-bold text-purple-400">---</div>
+          <div id="stat-sigma" class="text-xs text-gray-600 mt-1">---</div>
+        </div>
+      </div>
+
+      <!-- Main Visualization Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Liquid Lattice -->
+        <div class="stat-card lg:row-span-2 flex flex-col" style="--accent: #a855f7">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">Liquid Lattice</div>
+              <div class="text-[10px] text-gray-600 mt-1">Cognitive Domain Topology</div>
+            </div>
+            <div id="lattice-domain" class="text-xs text-purple-400 font-bold">---</div>
+          </div>
+          <div class="flex-1 flex items-center justify-center min-h-[300px]">
+            <svg id="lattice" viewBox="0 0 200 200" class="w-full h-full max-w-[300px]">
+              <defs>
+                <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.6"/>
+                  <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+                </radialGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <!-- Will be populated by JS -->
+            </svg>
+          </div>
+          <div class="mt-4 grid grid-cols-4 gap-2 text-[10px]">
+            <div class="text-center"><div id="lat-epsilon" class="text-cyan-400 font-bold">---</div><div class="text-gray-600">Epsilon</div></div>
+            <div class="text-center"><div id="lat-depth" class="text-purple-400 font-bold">---</div><div class="text-gray-600">Depth</div></div>
+            <div class="text-center"><div id="lat-gpu" class="text-green-400 font-bold">---</div><div class="text-gray-600">VRAM</div></div>
+            <div class="text-center"><div id="lat-viable" class="text-yellow-400 font-bold">---</div><div class="text-gray-600">Viable</div></div>
+          </div>
+        </div>
+
+        <!-- Training Dynamics Chart -->
+        <div class="stat-card lg:col-span-2" style="--accent: #22d3ee">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">Training Dynamics</div>
+              <div class="text-[10px] text-gray-600 mt-1">Loss & Reward over time</div>
+            </div>
+            <div class="flex gap-4 text-[10px]">
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Loss</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Reward</span>
+            </div>
+          </div>
+          <div class="h-48">
+            <canvas id="chart-dynamics"></canvas>
+          </div>
+        </div>
+
+        <!-- Epsilon Drift Chart -->
+        <div class="stat-card lg:col-span-2" style="--accent: #a855f7">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">Epsilon Drift</div>
+              <div class="text-[10px] text-gray-600 mt-1">Exploration parameter</div>
+            </div>
+          </div>
+          <div class="h-32">
+            <canvas id="chart-epsilon"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Domain Activity + Log Stream -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Domain Activity -->
+        <div class="stat-card" style="--accent: #10b981">
+          <div class="text-xs text-gray-500 uppercase tracking-wider mb-4">Domain Activity</div>
+          <div id="domain-bars" class="space-y-3">
+            <!-- Will be populated by JS -->
+          </div>
+        </div>
+
+        <!-- Log Stream -->
+        <div class="stat-card lg:col-span-2" style="--accent: #22d3ee">
+          <div class="flex justify-between items-start mb-4">
+            <div class="text-xs text-gray-500 uppercase tracking-wider">Live Stream</div>
+            <div id="log-count" class="text-[10px] text-gray-600">0 entries</div>
+          </div>
+          <div id="log-stream" class="h-64 overflow-y-auto space-y-1 text-xs font-mono">
+            <div class="text-gray-600 text-center py-8">Waiting for data...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="text-center text-[10px] text-gray-600 pt-8 border-t border-white/5">
+        HumanAI Convention | Examiner Research Group | <a href="https://humanaiconvention.com" class="text-cyan-500 hover:text-cyan-400">humanaiconvention.com</a>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Configuration
+    const DOMAINS = {
+      LOGOS:  { color: '#10b981', desc: 'Logic & Mathematics' },
+      PHYSIS: { color: '#3b82f6', desc: 'Physical Reality' },
+      BIOS:   { color: '#84cc16', desc: 'Organic Systems' },
+      NOMOS:  { color: '#ef4444', desc: 'Law & Society' },
+      PSYCHE: { color: '#d946ef', desc: 'Psychology' },
+      SOPHIA: { color: '#f59e0b', desc: 'Philosophy' },
+      OIKOS:  { color: '#06b6d4', desc: 'Economics' }
+    };
+    const DOMAIN_NAMES = Object.keys(DOMAINS);
+    const DATA_URL = './data/metrics.jsonl';
+
+    let allEntries = [];
+    let domainCounts = {};
+    let chartDynamics = null;
+    let chartEpsilon = null;
+    let lastStep = 0;
+
+    // Initialize domain counts
+    DOMAIN_NAMES.forEach(d => domainCounts[d] = 0);
+
+    // Parse JSONL with NaN handling
+    function parseJSONL(text) {
+      return text.split('\n')
+        .filter(line => line.trim())
+        .map(line => {
+          try {
+            return JSON.parse(line.replace(/:\s*NaN/g, ': null'));
+          } catch { return null; }
+        })
+        .filter(e => e && typeof e.step === 'number');
+    }
+
+    // Create Liquid Lattice SVG
+    function createLattice() {
+      const svg = document.getElementById('lattice');
+      const cx = 100, cy = 100, r = 65;
+
+      // Create connections and nodes
+      let html = `<circle cx="${cx}" cy="${cy}" r="50" fill="url(#coreGlow)" class="pulse"/>`;
+
+      // Outer ring (spinning)
+      html += `<circle cx="${cx}" cy="${cy}" r="75" fill="none" stroke="#222" stroke-width="1" stroke-dasharray="4,4" class="spin"/>`;
+
+      // Domain nodes
+      DOMAIN_NAMES.forEach((name, i) => {
+        const angle = (i * 2 * Math.PI / 7) - Math.PI/2;
+        const x = cx + r * Math.cos(angle);
+        const y = cy + r * Math.sin(angle);
+        const color = DOMAINS[name].color;
+
+        // Connection to center
+        html += `<line class="domain-line" data-domain="${name}" x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${color}" stroke-width="1" stroke-opacity="0.3"/>`;
+
+        // Node
+        html += `
+          <g class="domain-node" data-domain="${name}" transform="translate(${x},${y})">
+            <circle r="18" fill="#0a0a0c" stroke="${color}" stroke-width="2"/>
+            <circle class="pulse-ring" r="18" fill="none" stroke="${color}" stroke-width="1" opacity="0"/>
+            <text y="1" text-anchor="middle" fill="${color}" font-size="6" font-weight="bold">${name.slice(0,3)}</text>
+            <text y="8" text-anchor="middle" fill="#666" font-size="4">${name}</text>
+          </g>
+        `;
+      });
+
+      // Center core
+      html += `
+        <circle cx="${cx}" cy="${cy}" r="20" fill="#0a0a0c" stroke="#333" stroke-width="1"/>
+        <circle cx="${cx}" cy="${cy}" r="12" fill="#111" stroke="#22d3ee" stroke-width="2" id="core-ring"/>
+        <text x="${cx}" y="${cy+2}" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">L4</text>
+      `;
+
+      svg.innerHTML += html;
+    }
+
+    // Update Lattice visualization
+    function updateLattice(entry) {
+      if (!entry) return;
+
+      const activeDomain = entry.domain;
+      const color = DOMAINS[activeDomain]?.color || '#22d3ee';
+
+      // Update core glow color
+      const coreGlow = document.querySelector('#coreGlow stop');
+      if (coreGlow) coreGlow.setAttribute('stop-color', color);
+
+      // Update core ring
+      const coreRing = document.getElementById('core-ring');
+      if (coreRing) coreRing.setAttribute('stroke', color);
+
+      // Update all domain nodes
+      document.querySelectorAll('.domain-node').forEach(node => {
+        const domain = node.dataset.domain;
+        const isActive = domain === activeDomain;
+        node.classList.toggle('active', isActive);
+
+        const pulseRing = node.querySelector('.pulse-ring');
+        if (pulseRing) {
+          pulseRing.style.animation = isActive ? 'pulse-ring 1.5s ease-out infinite' : 'none';
+          pulseRing.style.opacity = isActive ? '1' : '0';
+        }
+      });
+
+      // Update connection lines
+      document.querySelectorAll('.domain-line').forEach(line => {
+        const domain = line.dataset.domain;
+        const isActive = domain === activeDomain;
+        line.setAttribute('stroke-width', isActive ? '3' : '1');
+        line.setAttribute('stroke-opacity', isActive ? '0.8' : '0.3');
+      });
+
+      // Update lattice stats
+      document.getElementById('lattice-domain').textContent = activeDomain;
+      document.getElementById('lattice-domain').style.color = color;
+      document.getElementById('lat-epsilon').textContent = entry.epsilon?.toFixed(3) || '---';
+      document.getElementById('lat-depth').textContent = entry.thinking_depth || '---';
+      document.getElementById('lat-gpu').textContent = entry.gpu_mem_gb ? `${entry.gpu_mem_gb.toFixed(1)}GB` : '---';
+      document.getElementById('lat-viable').textContent = entry.viability?.viable ? 'YES' : 'NO';
+    }
+
+    // Create domain activity bars
+    function createDomainBars() {
+      const container = document.getElementById('domain-bars');
+      container.innerHTML = DOMAIN_NAMES.map(name => `
+        <div class="flex items-center gap-3">
+          <div class="w-16 text-[10px] font-bold" style="color: ${DOMAINS[name].color}">${name}</div>
+          <div class="flex-1 h-2 bg-[#1a1a1d] rounded-full overflow-hidden">
+            <div id="bar-${name}" class="h-full rounded-full transition-all duration-500" style="width: 0%; background: ${DOMAINS[name].color}"></div>
+          </div>
+          <div id="count-${name}" class="w-8 text-[10px] text-gray-500 text-right">0</div>
+        </div>
+      `).join('');
+    }
+
+    // Update domain bars
+    function updateDomainBars() {
+      const total = Object.values(domainCounts).reduce((a,b) => a+b, 0) || 1;
+      const max = Math.max(...Object.values(domainCounts)) || 1;
+
+      DOMAIN_NAMES.forEach(name => {
+        const bar = document.getElementById(`bar-${name}`);
+        const count = document.getElementById(`count-${name}`);
+        if (bar) bar.style.width = `${(domainCounts[name] / max) * 100}%`;
+        if (count) count.textContent = domainCounts[name];
+      });
+    }
+
+    // Initialize charts
+    function initCharts() {
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { grid: { color: '#222' }, ticks: { color: '#666', font: { size: 10 } } }
+        }
+      };
+
+      chartDynamics = new Chart(document.getElementById('chart-dynamics'), {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            { label: 'Loss', data: [], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.1)', fill: true, tension: 0.3, pointRadius: 0 },
+            { label: 'Reward', data: [], borderColor: '#facc15', backgroundColor: 'rgba(250,204,21,0.1)', fill: true, tension: 0.3, pointRadius: 0, yAxisID: 'y1' }
+          ]
+        },
+        options: {
+          ...commonOptions,
+          scales: {
+            ...commonOptions.scales,
+            y: { ...commonOptions.scales.y, position: 'left', title: { display: true, text: 'Loss', color: '#22d3ee', font: { size: 10 } } },
+            y1: { position: 'right', grid: { display: false }, ticks: { color: '#666', font: { size: 10 } }, title: { display: true, text: 'Reward', color: '#facc15', font: { size: 10 } } }
+          }
+        }
+      });
+
+      chartEpsilon = new Chart(document.getElementById('chart-epsilon'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ data: [], borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,0.1)', fill: true, tension: 0.1, pointRadius: 0 }] },
+        options: commonOptions
+      });
+    }
+
+    // Update charts
+    function updateCharts() {
+      const last100 = allEntries.slice(-100);
+      const labels = last100.map(e => e.step);
+
+      chartDynamics.data.labels = labels;
+      chartDynamics.data.datasets[0].data = last100.map(e => e.loss);
+      chartDynamics.data.datasets[1].data = last100.map(e => e.reward);
+      chartDynamics.update('none');
+
+      chartEpsilon.data.labels = labels;
+      chartEpsilon.data.datasets[0].data = last100.map(e => e.epsilon);
+      chartEpsilon.update('none');
+    }
+
+    // Update log stream
+    function updateLogStream() {
+      const container = document.getElementById('log-stream');
+      const last30 = allEntries.slice(-30).reverse();
+
+      container.innerHTML = last30.map((e, i) => {
+        const color = DOMAINS[e.domain]?.color || '#666';
+        const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '--:--:--';
+        const lossStr = e.loss === null ? 'NaN' : e.loss?.toFixed(2) || '---';
+        return `
+          <div class="log-entry ${i === 0 ? 'data-flash' : ''}">
+            <span class="text-gray-600">[${time}]</span>
+            <span class="text-cyan-500">Step ${e.step}</span>
+            <span style="color: ${color}">[${e.domain}]</span>
+            <span class="text-gray-400">Loss: <span class="text-gray-300">${lossStr}</span></span>
+            <span class="text-gray-600">|</span>
+            <span class="text-gray-400">Rew: <span class="${e.reward > 0 ? 'text-green-400' : 'text-red-400'}">${e.reward?.toFixed(3) || '---'}</span></span>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('log-count').textContent = `${allEntries.length} entries`;
+    }
+
+    // Update all stats
+    function updateStats(entry, prevEntry) {
+      if (!entry) return;
+
+      // Header
+      document.getElementById('header-step').textContent = `Step: ${entry.step.toLocaleString()}`;
+      document.getElementById('header-time').textContent = new Date().toLocaleTimeString();
+
+      // Stat cards
+      document.getElementById('stat-step').textContent = entry.step.toLocaleString();
+      document.getElementById('stat-loss').textContent = entry.loss === null ? 'NaN' : entry.loss?.toFixed(4) || '---';
+      document.getElementById('stat-reward').textContent = entry.reward?.toFixed(3) || '---';
+      document.getElementById('stat-domain').textContent = entry.domain || '---';
+      document.getElementById('stat-domain').style.color = DOMAINS[entry.domain]?.color || '#a855f7';
+      document.getElementById('stat-sigma').textContent = `${entry.sigma_intervention || '---'} intervention`;
+
+      // Loss delta
+      if (prevEntry && entry.loss !== null && prevEntry.loss !== null) {
+        const delta = entry.loss - prevEntry.loss;
+        const deltaStr = delta > 0 ? `+${delta.toFixed(4)}` : delta.toFixed(4);
+        document.getElementById('stat-loss-delta').textContent = `${deltaStr} from prev`;
+        document.getElementById('stat-loss-delta').className = `text-xs mt-1 ${delta > 0 ? 'text-red-400' : 'text-green-400'}`;
+      }
+
+      // Flash active cards
+      document.querySelectorAll('.stat-card').forEach(card => {
+        card.classList.add('active');
+        setTimeout(() => card.classList.remove('active'), 500);
+      });
+
+      // Status dot
+      const dot = document.getElementById('status-dot');
+      dot.classList.add('bg-green-400', 'pulse');
+      dot.classList.remove('bg-gray-600');
+    }
+
+    // Main fetch function
+    async function fetchData() {
+      try {
+        const response = await fetch(DATA_URL + '?t=' + Date.now());
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const text = await response.text();
+        const entries = parseJSONL(text);
+
+        if (entries.length === 0) return;
+
+        // Update domain counts from new entries
+        const newEntries = entries.filter(e => e.step > lastStep);
+        newEntries.forEach(e => {
+          if (DOMAINS[e.domain]) domainCounts[e.domain]++;
+        });
+
+        allEntries = entries;
+        const latest = entries[entries.length - 1];
+        const previous = entries[entries.length - 2];
+        lastStep = latest.step;
+
+        updateStats(latest, previous);
+        updateLattice(latest);
+        updateCharts();
+        updateDomainBars();
+        updateLogStream();
+
+      } catch (err) {
+        console.error('Fetch error:', err);
+        document.getElementById('status-dot').classList.remove('bg-green-400', 'pulse');
+        document.getElementById('status-dot').classList.add('bg-red-500');
+      }
+    }
+
+    // Initialize
+    createLattice();
+    createDomainBars();
+    initCharts();
+    fetchData();
+    setInterval(fetchData, 5000);
+  </script>
 </body>
 </html>
