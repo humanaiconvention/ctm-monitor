@@ -658,7 +658,7 @@ class ContinuousThoughtMachine(nn.Module):
         entropy_bonus = beta * entropy  # beta=0.01 encourages exploration
 
         grpo_loss = -(log_probs * adv_expanded).mean() - entropy_bonus
-        grads = torch.autograd.grad(grpo_loss, target_nlm.parameters(), create_graph=False)
+        grads = torch.autograd.grad(grpo_loss, target_nlm.parameters(), create_graph=False, allow_unused=True)
         target_nlm.update_weights(grads, lr)
 
         return grpo_loss, rewards.mean()
