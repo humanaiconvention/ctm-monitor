@@ -127,6 +127,12 @@ Collapse Detection:
     parser.add_argument('--recursive-operator_rank', type=int, default=8,
                         help='Rank for recursive weight operators (default: 8)')
 
+    # Advisor Grounding
+    parser.add_argument('--distributed', action='store_true',
+                        help='Enable distributed grounding (local PC as advisor)')
+    parser.add_argument('--grounding-url', type=str, default="http://localhost:8080",
+                        help='URL for the grounding server (default: http://localhost:8080)')
+
     args = parser.parse_args()
 
     # Check requirements
@@ -202,6 +208,8 @@ Collapse Detection:
         recursive_operator=args.recursive_operator,
         recursive_operator_rank=args.recursive_operator_rank,
         high_heaven=args.high_heaven,
+        distributed=args.distributed,
+        grounding_url=args.grounding_url
     )
     
     # Load Corpus if in High Heaven mode

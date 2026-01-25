@@ -30,6 +30,7 @@ class GroundingClient:
     async def request_grounding(self, pillar, query, logic_gap, step, request_id=None):
         """Send grounding request, await response with retry logic."""
         import uuid
+        import requests
         request_id = request_id or str(uuid.uuid4())
         
         req = {
@@ -37,13 +38,32 @@ class GroundingClient:
             "query": query, "logic_gap": logic_gap, "step": step
         }
         
+        # --- HTTP MODE (for LocalTunnel/Advisor Server) ---
+        if self.server_url.startswith("http"):
+            endpoint = f"{self.server_url.rstrip('/')}/query"
+            try:
+                # Use asycnio thread pool for blocking request
+                loop = asyncio.get_event_loop()
+                response = await loop.run_in_executor(
+                    None, 
+                    lambda: requests.post(endpoint, json=req, timeout=120)
+                )
+                if response.status_code == 200:
+                    return response.json()
+                else:
+                    print(f"  [GroundingClient] HTTP Error {response.status_code}: {response.text}")
+                    return None
+            except Exception as e:
+                print(f"  [GroundingClient] HTTP Request failed: {e}")
+                return None
+
+        # --- WEBSOCKET MODE ---
         for attempt in range(3):
             is_closed = True
             if self.ws:
                 try:
                     is_closed = not self.ws.open
                 except AttributeError:
-                    # Fallback for different versions
                     is_closed = getattr(self.ws, 'closed', True)
             
             if not self.connected or is_closed:
