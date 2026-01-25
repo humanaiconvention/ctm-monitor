@@ -57,21 +57,21 @@ try:
     CUDA_TILE_AVAILABLE = True
 except ImportError:
     CUDA_TILE_AVAILABLE = False
-    print("[v5.0] Warning: CUDA Tile not available. Falling back to PyTorch operations.")
+    # Optional CUDA Tile optimization - silent fallback to PyTorch
 
 try:
     from nemo_gym_interface import GymEnvironmentManager, create_pillar_environment, create_multi_pillar_environment
     GYM_INTERFACE_AVAILABLE = True
 except ImportError:
     GYM_INTERFACE_AVAILABLE = False
-    print("[v5.0] Warning: Gym interface not available.")
+    # Optional RL interface - silent fallback
 
 try:
     from nemo_gym_training import NeMoGymTrainer, NeMoGymConfig, create_nemo_trainer, create_nemo_config
     NEMO_GYM_AVAILABLE = True
 except ImportError:
     NEMO_GYM_AVAILABLE = False
-    print("[v5.0] Warning: NeMo Gym not available.")
+    # Optional NeMo integration - silent fallback
 
 # Class removed - now imported from ctm_telemetry
 
@@ -658,7 +658,7 @@ class HFDatasetWrapper(Dataset):
         return torch.tensor(tokens[:-1], dtype=torch.long), torch.tensor(tokens[1:], dtype=torch.long)
 
 class UnifiedTrainer:
-    def __init__(self, model, scotus_path=None, high_heaven=False, mitosis=False, advisor_provider="lfm", distributed=False, grounding_url=None, tokenizer_name="tiiuae/Falcon-H1R-7B", checkpoint_dir="Examiner1/models/examiner_h1r_phase3b"):
+    def __init__(self, model, scotus_path=None, high_heaven=False, mitosis=False, advisor_provider="lfm", distributed=False, grounding_url=None, tokenizer_name="LiquidAI/LFM2.5-1.2B-Thinking", checkpoint_dir="checkpoints", use_recursive_weights=False, recursive_operator='spectral', recursive_operator_rank=8):
         self.mitosis = mitosis
         self.model = model
         self.high_heaven = high_heaven
@@ -669,6 +669,24 @@ class UnifiedTrainer:
         self.grounding_last_mtime = 0
         self.checkpoint_dir = checkpoint_dir
         os.makedirs(self.checkpoint_dir, exist_ok=True)
+
+        # v5.3: Recursive Weight Configuration
+        self.use_recursive_weights = use_recursive_weights
+        self.recursive_operator = recursive_operator
+        self.recursive_operator_rank = recursive_operator_rank
+
+        if use_recursive_weights:
+            print(f"[v5.3] Recursive Weight Derivation ENABLED")
+            print(f"       Operator: {recursive_operator}, Rank: {recursive_operator_rank}")
+            # Import RecursiveSpecialistNLM for specialist creation
+            try:
+                from recursive_weights import RecursiveNLM, RecursiveSpecialistNLM
+                self._recursive_weights_available = True
+            except ImportError:
+                print("[v5.3] Warning: recursive_weights module not available")
+                self._recursive_weights_available = False
+        else:
+            self._recursive_weights_available = False
         
         # Initialize Tokenizer & Embedding
         print(f"Loading Tokenizer: {tokenizer_name}...")
@@ -785,6 +803,7 @@ class UnifiedTrainer:
             distributed=distributed,
             grounding_url=grounding_url
         )
+        self.grounding_client = get_grounding_client(grounding_url)
         self.research_domains = ["LOGOS", "PHYSIS", "BIOS", "NOMOS", "PSYCHE", "SOPHIA", "OIKOS"] # All pillars grounded
 
         # Phase 4 Enhancements (v4.9):
@@ -1022,8 +1041,14 @@ class UnifiedTrainer:
         else:
             return "OK: No collapse signatures detected"
             
-    def _inject_modules(self, model):
-        """Refreshed injection logic."""
+    def _inject_modules(self, model, skip_nlm=False):
+        """
+        Refreshed injection logic.
+
+        Args:
+            model: The CTM model to inject modules into
+            skip_nlm: v5.3 - Skip NLM-related injections (for RecursiveSpecialistNLM)
+        """
         device = next(iter(model.parameters())).device
         d_model = model.d_model
         if not hasattr(model, 'embedding'):
@@ -1144,25 +1169,77 @@ class UnifiedTrainer:
             self.spawn_specialist(pillar)
 
     def spawn_specialist(self, domain):
-        """ Mitosis: Create a new specialist by cloning the Central Foundation """
+        """
+        Mitosis: Create a new specialist by cloning the Central Foundation.
+
+        v5.3: When recursive weights enabled, creates RecursiveSpecialistNLM
+        that derives weights from central NLM, achieving ~91% parameter savings.
+        """
         if domain in self.specialist_branches: return
-        
+
         # Determine device
         device = next(iter(self.model.parameters())).device
-        
-        specialist = ContinuousThoughtMachine(
-            d_model=self.model.d_model, 
-            memory_length=self.model.memory_length, 
-            num_thoughts=self.model.num_thoughts
-        ).to(device)
-        
-        # Inject modules
-        self._inject_modules(specialist)
-        
-        # Load current Foundation weights
-        self._safe_load_state_dict(specialist, self.model.state_dict())
+
+        # v5.3: Use RecursiveSpecialistNLM when recursive weights are enabled
+        if self.use_recursive_weights and self._recursive_weights_available:
+            from recursive_weights import RecursiveSpecialistNLM
+
+            # Create a wrapper CTM that uses RecursiveSpecialistNLM for its NLM
+            specialist = ContinuousThoughtMachine(
+                d_model=self.model.d_model,
+                memory_length=self.model.memory_length,
+                num_thoughts=self.model.num_thoughts,
+                use_recursive_weights=False,  # We'll replace the NLM manually
+            ).to(device)
+
+            # Replace the standard NLM with RecursiveSpecialistNLM
+            # This derives all weights from the central model's NLM
+            specialist.nlm = RecursiveSpecialistNLM(
+                central_nlm=self.model.nlm,
+                domain=domain,
+                operator_rank=self.recursive_operator_rank // 2,  # Smaller for specialists
+            ).to(device)
+
+            # Mark this specialist as recursive for tracking
+            specialist._is_recursive_specialist = True
+            specialist._recursive_domain = domain
+
+            # Inject modules (excluding NLM which is already set)
+            self._inject_modules(specialist, skip_nlm=True)
+
+            # Copy non-NLM state from central
+            central_state = self.model.state_dict()
+            specialist_state = specialist.state_dict()
+            for k, v in central_state.items():
+                if 'nlm' not in k and k in specialist_state:
+                    specialist_state[k] = v.clone()
+            specialist.load_state_dict(specialist_state, strict=False)
+
+            # Get parameter savings report
+            param_report = specialist.nlm.parameter_report()
+            print(f"  [v5.3] Recursive Specialist '{domain}' created: "
+                  f"{param_report['specialist_params']:,} params "
+                  f"({param_report['savings_percent']:.1f}% savings)")
+
+        else:
+            # Standard specialist creation (full weight copy)
+            specialist = ContinuousThoughtMachine(
+                d_model=self.model.d_model,
+                memory_length=self.model.memory_length,
+                num_thoughts=self.model.num_thoughts,
+                use_recursive_weights=self.use_recursive_weights,
+                recursive_operator=self.recursive_operator,
+                recursive_operator_rank=self.recursive_operator_rank,
+            ).to(device)
+
+            # Inject modules
+            self._inject_modules(specialist)
+
+            # Load current Foundation weights
+            self._safe_load_state_dict(specialist, self.model.state_dict())
+            print(f"  [PillarSpawn] Specialist '{domain}' spawned from Foundation.")
+
         self.specialist_branches[domain] = specialist
-        print(f"  [PillarSpawn] Specialist '{domain}' spawned from Foundation.")
 
     def _init_domain_prototypes(self):
         """ Initialize DDA Router prototypes using v4.8 DDARouter """
@@ -2288,14 +2365,21 @@ class UnifiedTrainer:
             import subprocess
             # 1. Add metrics and progress logs (skip binary checkpoints)
             subprocess.run(["git", "add", self.log_file, "training_log.txt"], check=False)
-            
+
             # 2. Commit with step info
             step = getattr(self, 'global_train_step', 0)
             msg = f"CTM Heartbeat: Step {step} | Syncing Logic Foundation Metrics"
             subprocess.run(["git", "commit", "-m", msg], check=False)
-            
-            # 3. Push to current branch
+
+            # 3. Push to current branch (private repo)
             subprocess.run(["git", "push"], check=False)
+
+            # 4. Also push to public repo if 'public' remote exists (for live dashboard)
+            result = subprocess.run(["git", "remote", "get-url", "public"], capture_output=True, text=True)
+            if result.returncode == 0:
+                print("Pushing to public repo for live dashboard...")
+                subprocess.run(["git", "push", "public", "HEAD:live"], check=False)
+
             print("Git Push Complete.")
         except Exception as e:
             print(f"Warning: Git Sync failed ({e}). Continuing training.")
