@@ -182,16 +182,18 @@ Collapse Detection:
     # Compile model in High Heaven mode for speed (Skip if compiler missing)
     if args.high_heaven:
         print("[High Heaven] Attempting compilation...")
-        # Check for C++ compiler first
         try:
-            subprocess.check_call(["g++", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Force G++ env if not set
+            if "CXX" not in os.environ:
+                 os.environ["CXX"] = "g++"
+            if "CC" not in os.environ:
+                 os.environ["CC"] = "gcc"
+                 
+            # Light check
             model = torch.compile(model)
-            print("[High Heaven] Compilation SUCCESS (Torch 2.0+ optimized)")
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            print("[High Heaven] Warning: g++ not found. Skipping torch.compile.")
-            print("              VRAM usage will still update via Batch Size, but execution may be slower.")
+            print("[High Heaven] Compilation ENABLED (Torch 2.0+ optimized)")
         except Exception as e:
-            print(f"[High Heaven] Compilation failed: {e}. Skipping.")
+            print(f"[High Heaven] Compilation failed: {e}. Running uncompiled.")
 
     # Initialize trainer with model (passing recursive weight config)
     trainer = UnifiedTrainer(
