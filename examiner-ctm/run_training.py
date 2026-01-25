@@ -112,13 +112,19 @@ Collapse Detection:
     parser.add_argument('--checkpoint-dir', type=str, default='checkpoints',
                         help='Checkpoint directory (default: checkpoints)')
 
+    # High Heaven Mode (VRAM Scale)
+    parser.add_argument('--high-heaven', action='store_true',
+                        help='Enable High Heaven mode (Batch 64+, Corpus Training, Compilation)')
+    parser.add_argument('--batch-size', type=int, default=64,
+                        help='Batch size for High Heaven mode (default: 64)')
+
     # v5.3: Recursive Weight Derivation
     parser.add_argument('--use-recursive-weights', action='store_true',
                         help='Enable v5.3 Recursive Weight Derivation (80%% parameter savings)')
     parser.add_argument('--recursive-operator', type=str, default='spectral',
                         choices=['spectral', 'linear', 'residual'],
                         help='Recursive weight operator type (default: spectral)')
-    parser.add_argument('--recursive-operator-rank', type=int, default=8,
+    parser.add_argument('--recursive-operator_rank', type=int, default=8,
                         help='Rank for recursive weight operators (default: 8)')
 
     args = parser.parse_args()
@@ -144,6 +150,14 @@ Collapse Detection:
     print(f"Git sync: {args.git_sync}")
     print(f"Resume: {args.resume}")
 
+    # High Heaven Configuration
+    if args.high_heaven:
+        print(f"\n[High Heaven] MODE: ENABLED")
+        print(f"       Batch Size: {args.batch_size}")
+        print(f"       Corpus Training: ENABLED")
+    else:
+        print(f"\n[High Heaven] Mode: Disabled (Low VRAM logic)")
+
     # v5.3: Recursive Weights Configuration
     if args.use_recursive_weights:
         print(f"\n[v5.3] RECURSIVE WEIGHT DERIVATION: ENABLED")
@@ -163,6 +177,14 @@ Collapse Detection:
         recursive_operator=args.recursive_operator,
         recursive_operator_rank=args.recursive_operator_rank,
     )
+    
+    # Compile model in High Heaven mode for speed
+    if args.high_heaven:
+        print("[High Heaven] Compiling model with torch.compile...")
+        try:
+            model = torch.compile(model)
+        except Exception as e:
+            print(f"[Warning] Compilation failed: {e}")
 
     # Initialize trainer with model (passing recursive weight config)
     trainer = UnifiedTrainer(
@@ -170,7 +192,12 @@ Collapse Detection:
         use_recursive_weights=args.use_recursive_weights,
         recursive_operator=args.recursive_operator,
         recursive_operator_rank=args.recursive_operator_rank,
+        high_heaven=args.high_heaven,
     )
+    
+    # Load Corpus if in High Heaven mode
+    if args.high_heaven:
+        trainer.load_corpus_data(batch_size=args.batch_size)
 
     # Update collapse detector settings
     if hasattr(trainer, 'collapse_detector'):

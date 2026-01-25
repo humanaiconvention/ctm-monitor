@@ -725,7 +725,7 @@ const App = () => {
 
   const displayLoss = latest ? (latest.loss == null ? "NaN" : latest.loss.toFixed(5)) : "---";
   const displayReward = latest ? (latest.reward != null ? latest.reward.toFixed(3) : "---") : "---";
-  const displayMem = latest ? latest.gpu_mem_gb?.toFixed(1) || "---" : "---";
+  const displayMem = latest && latest.gpu_mem_gb != null ? latest.gpu_mem_gb.toFixed(1) : "---";
   const displayStep = latest ? latest.step.toLocaleString() : "---";
   const displayEpsilon = latest ? latest.epsilon?.toFixed(4) || "---" : "---";
   const displayDepth = latest ? latest.thinking_depth || 0 : 0;
@@ -974,28 +974,36 @@ const App = () => {
             {/* Context Injections */}
             <div className="bg-[#0a0a0c]/60 border border-blue-500/20 rounded p-3 hover:border-blue-500/40 transition">
               <div className="text-[10px] text-blue-400 uppercase font-mono mb-2">Context Searches</div>
-              <div className="text-2xl font-mono text-blue-300">0</div>
+              <div className="text-2xl font-mono text-blue-300">
+                {latest?.phase4?.search_queries || 0}
+              </div>
               <div className="text-[9px] text-gray-600 mt-1">Light interventions</div>
             </div>
 
             {/* Advisor Consultations */}
             <div className="bg-[#0a0a0c]/60 border border-purple-500/20 rounded p-3 hover:border-purple-500/40 transition">
               <div className="text-[10px] text-purple-400 uppercase font-mono mb-2">Advisor Calls</div>
-              <div className="text-2xl font-mono text-purple-300">0</div>
+              <div className="text-2xl font-mono text-purple-300">
+                {logs.filter(l => l.sigma_intervention === 'hard').length}
+              </div>
               <div className="text-[9px] text-gray-600 mt-1">Moderate interventions</div>
             </div>
 
             {/* Combined (Critical) */}
             <div className="bg-[#0a0a0c]/60 border border-red-500/20 rounded p-3 hover:border-red-500/40 transition">
               <div className="text-[10px] text-red-400 uppercase font-mono mb-2">Critical (Combined)</div>
-              <div className="text-2xl font-mono text-red-300">0</div>
+              <div className="text-2xl font-mono text-red-300">
+                {logs.filter(l => l.sigma_intervention === 'hard' && (l.phase4?.search_queries || 0) > 3).length}
+              </div>
               <div className="text-[9px] text-gray-600 mt-1">Context + advisor forced</div>
             </div>
 
             {/* Viability Margin */}
             <div className="bg-[#0a0a0c]/60 border border-emerald-500/20 rounded p-3 hover:border-emerald-500/40 transition">
               <div className="text-[10px] text-emerald-400 uppercase font-mono mb-2">Viability Margin</div>
-              <div className="text-2xl font-mono text-emerald-300">--</div>
+              <div className="text-2xl font-mono text-emerald-300">
+                {latest?.viability?.margin != null ? latest.viability.margin.toFixed(4) : "--"}
+              </div>
               <div className="text-[9px] text-gray-600 mt-1">C_eff - E(t) delta</div>
             </div>
           </div>

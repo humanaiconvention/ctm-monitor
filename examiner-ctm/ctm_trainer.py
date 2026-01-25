@@ -2441,6 +2441,12 @@ class UnifiedTrainer:
                 throttle_mult = self.throttles.get(domain, 1.0)
                 self.review_predict_verify_revisit(domain=domain, throttle_mult=throttle_mult)
 
+            # High Heaven Mode: Interleaved Corpus Training (Batch Training to saturate GPU)
+            # 30% chance per step to run a heavy corpus batch (or always if high_heaven is aggressive)
+            if hasattr(self, 'high_heaven') and self.high_heaven and self.corpus_loader and random.random() < 0.3:
+                corpus_loss = self.train_step_corpus_self_test()
+                # print(f"  [HighHeaven] Corpus Self-test: {corpus_loss:.4f} reward")
+
             # Phase 2: Viability check (every 10 steps)
             if step % 10 == 0:
                 viability_result = self.viability_monitor.check_viability()
