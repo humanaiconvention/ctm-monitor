@@ -652,6 +652,33 @@ const App = () => {
         });
         clearTimeout(timeoutId);
         console.log('[CTM] Response status:', response.status, response.ok);
+        
+        // --- FALLBACK FOR CROSS-ORIGIN TESTING ---
+        // If we get a 0 (CORS opaque) or >399, try the relative path directly as a last resort
+        // (This helps when view_browser_page navigates within the same origin)
+        if (!response.ok || response.status === 0) {
+            console.log('[CTM] Fetch failed, attempting local relative path fallback...');
+            const localResponse = await fetch("parallel_training_metrics.jsonl?no_cache=" + Date.now());
+            if (localResponse.ok) {
+                 const localText = await localResponse.text();
+                 setBytesRead(localText.length);
+                 const localParsed = parseJSONL(localText);
+                 if (localParsed.length > 0) {
+                     setLogs(localParsed.slice(-MAX_HISTORY_POINTS));
+                     setErrorMsg(null);
+                     console.log('[CTM] Fallback success.');
+                     setDebugLog({ 
+                        url: "parallel_training_metrics.jsonl (Fallback)", 
+                        status: 200, 
+                        message: "OK (Local)", 
+                        timestamp: new Date().toISOString() 
+                     });
+                     setTimeout(() => setIsPolling(false), 800);
+                     return;
+                 }
+            }
+        }
+        // -----------------------------------------
 
         const rawText = await response.text();
         console.log('[CTM] Bytes received:', rawText.length);
