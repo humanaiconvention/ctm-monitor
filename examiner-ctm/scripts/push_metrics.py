@@ -23,7 +23,9 @@ def push_metrics():
             # We assume current branch is the one we want to sync
             result = subprocess.run(["git", "push", remote, "HEAD:live" if remote != "private" else "HEAD:parallel-ctm-marathon", "--force"], capture_output=True, text=True)
             if result.returncode != 0:
-                print(f"[Git Sync] Push to {remote} failed: {result.stderr}")
+                # Suppress "does not appear to be a git repository" noise
+                if "does not appear to be a git repository" not in result.stderr:
+                    print(f"[Git Sync] Push to {remote} failed: {result.stderr}")
             else:
                 print(f"[Git Sync] Pushed to {remote} successfully")
             
