@@ -2051,7 +2051,74 @@ class UnifiedTrainer:
                 score = score * (1.0 + phi)
                         
                 rewards.append(score)
+                rewards.append(score)
             return torch.tensor(rewards, device=inputs.device)
+
+    def train_step_corpus_self_test(self):
+        """Phase 1 Revival: Train on raw text from corpus to maintain grounding"""
+        self.optimizer.zero_grad()
+        
+        # Load batch
+        batch_text = self.corpus_loader.get_batch(min_length=128)
+        if not batch_text:
+            return 0.0
+            
+        print(f"  [HighHeaven] Corpus Injection: {len(batch_text)} documents loaded.")
+
+        # Tokenize (High VRAM usage here)
+        input_ids = self.tokenizer(batch_text, return_tensors="pt", padding=True, truncation=True, max_length=512).input_ids.to(self.device())
+        
+        # Forward pass (High VRAM usage here)
+        # Use TTT objective (predict next token)
+        # Shift inputs for causal LM
+        x_in = input_ids[:, :-1]
+        y_tgt = input_ids[:, 1:]
+        
+        # Embed
+        x_embed = self.model.embedding(x_in)
+        
+        # Run CTM (1 thought step for speed in corpus mode)
+        # We use a simplified forward pass for corpus training
+        # Just 1 thought to update weights but not spend forever
+        
+        # NLM Forward
+        # We need to adapt NLM to predict next token in sequence
+        # This is a bit different from the Thought Loop.
+        # For CTM v5, we treat the text sequence as a "thought stream"
+        
+        # 1. Standard Transformer Forward (Baseline)
+        # ... logic to run model ...
+        
+        # SIMPLIFICATION for VRAM Stress Test:
+        # Run the full Thought Loop on the *first* output token prediction
+        # (This is expensive but that's what we want!)
+        
+        # Use the FIRST 64 tokens to predict the 65th?
+        # Let's just run the standard TTT forward
+        # forward_ttt does retrieval + adaptation + inference
+        
+        outputs = self.model.forward_ttt(x_embed, input_ids=x_in, ttt_steps=1)
+        # Output: (B, T_thoughts, D)
+        
+        # Take final thought
+        final_thought = outputs[:, -1, :] # (B, D)
+        
+        # Project to vocab (predict NEXT token after the window?)
+        # Actually TTT predicts y_tgt from context.
+        # Let's map final thought to *reconstructing* the input or predicting next.
+        # For simplicity in V5.3 High Heaven:
+        # Predict the *last* token of y_tgt
+        target_token = y_tgt[:, -1]
+        
+        logits = self.model.lm_head(final_thought)
+        loss = F.cross_entropy(logits, target_token)
+        
+        loss.backward()
+        
+        # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+        self.optimizer.step()
+        
+        return loss.item()
 
         x_embed = self.model.embedding(inputs)
 
