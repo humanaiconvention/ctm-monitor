@@ -15,14 +15,17 @@ def push_metrics():
         msg = f"CTM Heartbeat: {timestamp} | Syncing Logic Foundation Metrics"
         subprocess.run(["git", "commit", "-m", msg], check=False)
         
-        # 3. Push
-        # We use --force if necessary or just a regular push
-        # For L4 git-sync, we usually just do a regular push
-        result = subprocess.run(["git", "push"], capture_output=True, text=True)
-        if result.returncode != 0:
-            print(f"[Git Sync] Push failed: {result.stderr}")
-        else:
-            print("[Git Sync] Metrics pushed successfully")
+        # 3. Push to all remotes
+        remotes = ["origin", "website", "private"]
+        for remote in remotes:
+            print(f"[Git Sync] Pushing to {remote}...")
+            # Push the branch we are on to the corresponding branch on each remote
+            # We assume current branch is the one we want to sync
+            result = subprocess.run(["git", "push", remote, "HEAD:live" if remote != "private" else "HEAD:parallel-ctm-marathon", "--force"], capture_output=True, text=True)
+            if result.returncode != 0:
+                print(f"[Git Sync] Push to {remote} failed: {result.stderr}")
+            else:
+                print(f"[Git Sync] Pushed to {remote} successfully")
             
     except Exception as e:
         print(f"[Git Sync] Error: {e}")
