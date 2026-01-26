@@ -35,17 +35,32 @@ class CTMTelemetry:
             print("  [Telemetry] Sidecar disabled (websockets not found).")
             return
         
-        try:
-            print(f"  [Telemetry] Sidecar starting on ws://0.0.0.0:{self.port}...")
-            async with websockets.serve(self.handle_client, "0.0.0.0", self.port):
-                await asyncio.Future()  # run forever
-        except OSError as e:
-            if e.errno == 98: # Address already in use
-                print(f"  [Warning] Telemetry port {self.port} busy. Sidecar disabled.")
-            else:
-                print(f"  [Warning] Telemetry start failed: {e}")
-        except Exception as e:
-            print(f"  [Warning] Telemetry sidecar error: {e}")
+        # Try ports 8080 to 8090
+        start_port = self.port
+        max_retries = 10
+        
+        for i in range(max_retries):
+            current_port = start_port + i
+            try:
+                print(f"  [Telemetry] Attempting sidecar on ws://0.0.0.0:{current_port}...")
+                # We need to run the server. straightforward using a new loop in this thread
+                async with websockets.serve(self.handle_client, "0.0.0.0", current_port):
+                    self.port = current_port # Update actual port
+                    print(f"  [Telemetry] Sidecar ACTIVE on port {self.port}")
+                    await asyncio.Future()  # run forever
+                break # Should not be reached unless server stops
+            except OSError as e:
+                if e.errno == 98 or (sys.platform == 'win32' and e.winerror == 10048): # Address already in use
+                    print(f"  [Warning] Port {current_port} busy, trying next...")
+                    continue
+                else:
+                    print(f"  [Warning] Telemetry start failed on {current_port}: {e}")
+                    break
+            except Exception as e:
+                print(f"  [Warning] Telemetry sidecar error: {e}")
+                break
+        else:
+             print("  [Error] Could not find free port for telemetry after 10 attempts.")
 
     async def handle_client(self, websocket):
         """Send live metrics to connected AI Studio dashboard"""

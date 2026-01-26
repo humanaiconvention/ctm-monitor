@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.env.local
+.venv
+env/
+venv/
+checkpoints/
+examiner-ctm/checkpoints/
+.DS_Store
+wandb/

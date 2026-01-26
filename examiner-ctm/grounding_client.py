@@ -46,10 +46,17 @@ class GroundingClient:
                 print(f"    [GroundingClient] Sending request to {endpoint} (ID: {request_id})...")
                 import time
                 start_time = time.time()
+                # Bypass LocalTunnel reminder page
+                headers = {
+                    "Bypass-Tunnel-Reminder": "true",
+                    "User-Agent": "Examiner-CTM/v5.3",
+                    "Content-Type": "application/json"
+                }
+
                 loop = asyncio.get_event_loop()
                 response = await loop.run_in_executor(
                     None, 
-                    lambda: requests.post(endpoint, json=req, timeout=120)
+                    lambda: requests.post(endpoint, json=req, headers=headers, timeout=120)
                 )
                 duration = time.time() - start_time
                 if response.status_code == 200:
