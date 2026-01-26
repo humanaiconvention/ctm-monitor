@@ -53,21 +53,31 @@ def discover_corpus_root():
     best_path = SCRIPT_DIR / "corpus"
     max_score = -1
     
+    # Extensions we consider as "Corpus Data"
+    EXTENSIONS = ["**/*.pdf", "**/*.txt", "**/*.jsonl", "**/*.json", "**/*.md", "**/*.csv"]
+    
     for label, path in candidates:
         if path.exists() and path.is_dir():
             try:
                 # Calculate a "Volume Score"
                 # - Foundational files: small score
                 # - Specialized subdirs: HUGE score
-                found_files = len(list(path.glob("**/*.pdf"))) + len(list(path.glob("**/*.txt")))
+                found_files = 0
+                for ext in EXTENSIONS:
+                    found_files += len(list(path.glob(ext)))
+                
                 has_humanities = (path / "humanities").exists()
                 has_bio = (path / "camel-ai-biology").exists()
                 
                 score = found_files
-                if has_humanities: score += 1000
-                if has_bio: score += 1000
+                if has_humanities: score += 10000
+                if has_bio: score += 10000
                 
-                print(f"  - [{label}] Found at {path} (Files: {found_files}, Volume: {'YES' if has_humanities else 'NO'}, Score: {score})")
+                # Check for large files directly in path
+                size_gb = sum(f.stat().st_size for f in path.glob("**/*") if f.is_file()) / (1024**3)
+                if size_gb > 1.0: score += int(size_gb * 1000)
+
+                print(f"  - [{label}] Found at {path} (Files: {found_files}, Size: {size_gb:.2f}GB, Volume: {'YES' if has_humanities else 'NO'}, Score: {score})")
                 
                 if score > max_score:
                     max_score = score
@@ -76,7 +86,7 @@ def discover_corpus_root():
                 print(f"  - [{label}] Error scanning {path}: {e}")
                 continue
 
-    print(f"[CorpusDiscovery] Selected: {best_path} (Global Files: {max_score if max_score >=0 else 0})")
+    print(f"[CorpusDiscovery] Selected: {best_path} (Global Score: {max_score if max_score >=0 else 0})")
     return best_path
 
 CORPUS_ROOT = discover_corpus_root()
@@ -268,8 +278,9 @@ def get_corpus_for_phase(phase: str) -> List[Path]:
     if "subdirs" in config:
         for subdir in config["subdirs"]:
             if subdir.exists() and subdir.is_dir():
-                files.extend(subdir.glob("*.pdf"))
-                files.extend(subdir.glob("*.txt"))
+                # Recursive glob to capture all files in subdatasets
+                for ext in ["**/*.pdf", "**/*.txt", "**/*.jsonl", "**/*.json", "**/*.md"]:
+                    files.extend(subdir.glob(ext))
 
     return files
 
@@ -302,8 +313,9 @@ def get_corpus_for_pillar(pillar: str, phase: str = "all") -> List[Path]:
 
         if path.exists():
             if path.is_dir():
-                files.extend(path.glob("*.pdf"))
-                files.extend(path.glob("*.txt"))
+                # Recursive glob
+                for ext in ["**/*.pdf", "**/*.txt", "**/*.jsonl", "**/*.json", "**/*.md"]:
+                    files.extend(path.glob(ext))
             else:
                 files.append(path)
 
