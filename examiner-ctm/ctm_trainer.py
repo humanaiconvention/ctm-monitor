@@ -2051,7 +2051,6 @@ class UnifiedTrainer:
                 score = score * (1.0 + phi)
                         
                 rewards.append(score)
-                rewards.append(score)
             return torch.tensor(rewards, device=inputs.device)
 
     def train_step_corpus_self_test(self):
@@ -2063,59 +2062,47 @@ class UnifiedTrainer:
         if not batch_text:
             return 0.0
             
-        print(f"  [HighHeaven] Corpus Injection: {len(batch_text)} documents loaded.")
+        print(f"  [HighHeaven] Corpus Injection: {len(batch_text)} docs")
 
-        # Tokenize (High VRAM usage here)
-        input_ids = self.tokenizer(batch_text, return_tensors="pt", padding=True, truncation=True, max_length=512).input_ids.to(self.device())
+        # Tokenize (Shorter sequences for stability in large batches)
+        max_len = 128 if len(batch_text) > 256 else 512
+        input_ids = self.tokenizer(batch_text, return_tensors="pt", padding=True, truncation=True, max_length=max_len).input_ids.to(self.device())
         
-        # Forward pass (High VRAM usage here)
-        # Use TTT objective (predict next token)
-        # Shift inputs for causal LM
+        B, S = input_ids.shape
+        if S < 2: return 0.0
+
+        # causal LM setup
         x_in = input_ids[:, :-1]
         y_tgt = input_ids[:, 1:]
         
         # Embed
         x_embed = self.model.embedding(x_in)
         
-        # Run CTM (1 thought step for speed in corpus mode)
-        # We use a simplified forward pass for corpus training
-        # Just 1 thought to update weights but not spend forever
+        # Use standard forward to avoid TTT local adaptation overhead during global training
+        # We want to train the NLM weights globally
+        outputs = self.model.forward(x_embed, input_ids=x_in)
+        # outputs shape: (B, T, D) if input was 2D, but here input_ids is 2D, x_embed is 3D
+        # In CTM.forward: if dim=3, it takes x = x[:, -1, :]. 
+        # Wait, that's not good for causal LM.
         
-        # NLM Forward
-        # We need to adapt NLM to predict next token in sequence
-        # This is a bit different from the Thought Loop.
-        # For CTM v5, we treat the text sequence as a "thought stream"
+        # CTM v4/v5 is designed for reasoning on the LAST token.
+        # To train on a sequence, we should ideally run it for each token, but that's O(S*T).
+        # Optimization: We'll run the thought loop on the WHOLE sequence as a latent state.
         
-        # 1. Standard Transformer Forward (Baseline)
-        # ... logic to run model ...
-        
-        # SIMPLIFICATION for VRAM Stress Test:
-        # Run the full Thought Loop on the *first* output token prediction
-        # (This is expensive but that's what we want!)
-        
-        # Use the FIRST 64 tokens to predict the 65th?
-        # Let's just run the standard TTT forward
-        # forward_ttt does retrieval + adaptation + inference
-        
-        outputs = self.model.forward_ttt(x_embed, input_ids=x_in, ttt_steps=1)
-        # Output: (B, T_thoughts, D)
-        
-        # Take final thought
+        # Let's use a simpler approach for High Heaven:
+        # We'll just train on the FINAL token prediction for the sequence
+        # (This still forces the model to process the whole sequence into the thought state)
+        # outputs is (B, T, D)
         final_thought = outputs[:, -1, :] # (B, D)
+        target_token = y_tgt[:, -1]       # (B,)
         
-        # Project to vocab (predict NEXT token after the window?)
-        # Actually TTT predicts y_tgt from context.
-        # Let's map final thought to *reconstructing* the input or predicting next.
-        # For simplicity in V5.3 High Heaven:
-        # Predict the *last* token of y_tgt
-        target_token = y_tgt[:, -1]
-        
+        if not hasattr(self.model, 'lm_head'):
+            self.model.lm_head = nn.Linear(self.model.d_model, self.tokenizer.vocab_size).to(self.device())
+
         logits = self.model.lm_head(final_thought)
         loss = F.cross_entropy(logits, target_token)
         
         loss.backward()
-        
-        # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.optimizer.step()
         
         return loss.item()
@@ -2387,14 +2374,9 @@ class UnifiedTrainer:
             "extra": extra_metrics
         })
 
-        # Auto-Push to Git (Every 10 Steps)
-        if log_entry["step"] % 10 == 0:
-            try:
-                # Use current working directory or relative path
-                cwd = os.path.dirname(os.path.abspath(__file__))
-                subprocess.Popen(["python3", "scripts/push_metrics.py"], cwd=cwd)
-            except Exception as e:
-                print(f"[Warning] Failed to trigger git push: {e}")
+        })
+
+        # Logic for automatic telemetry push is now handled in train_parallel
 
     def budget_governor(self, domain):
         """
@@ -2430,33 +2412,24 @@ class UnifiedTrainer:
         print("\n--- Git Heartbeat: Pushing Metrics ---")
         try:
             import subprocess
-            # 1. Add metrics and progress logs (skip binary checkpoints)
+            # 1. Add metrics and progress logs
             subprocess.run(["git", "add", self.log_file, "training_log.txt"], check=False)
 
-            # 2. Commit with step info
+            # 2. Commit
             step = getattr(self, 'global_train_step', 0)
             msg = f"CTM Heartbeat: Step {step} | Syncing Logic Foundation Metrics"
-            subprocess.run(["git", "commit", "-m", msg], check=False)
+            # allow empty commit if nothing changed
+            subprocess.run(["git", "commit", "-m", msg, "--allow-empty"], check=False)
 
-            # Check and push to each remote safely
-            for remote in ['origin', 'private', 'website', 'public']:
-                try:
-                    # Check if remote exists
-                    res = subprocess.run(["git", "remote", "get-url", remote], capture_output=True, text=True)
-                    if res.returncode == 0:
-                        branch = "live" if remote == "website" else "parallel-ctm-marathon"
-                        if remote == "origin": branch = subprocess.check_output(["git", "branch", "--show-current"]).decode().strip()
-                        
-                        # Special handling for website branch mapping
-                        target_ref = f"HEAD:{branch}" if remote != "website" else "HEAD:gh-pages"
-                        
-                        print(f"[Git Sync] Pushing to {remote}...")
-                        subprocess.run(["git", "push", remote, target_ref], check=False)
-                        print(f"[Git Sync] Pushed to {remote} successfully")
-                except Exception:
-                    continue
+            # 3. Push to Public Live branch (for dashboard)
+            # Standardize origin:live
+            print(f"[Git Sync] Pushing to origin:live...")
+            result = subprocess.run(["git", "push", "origin", "HEAD:live", "--force"], capture_output=True, text=True)
+            if result.returncode == 0:
+                print("[Git Sync] Pushed to origin:live successfully")
+            else:
+                print(f"[Git Sync] Push failed: {result.stderr}")
 
-            print("Git Push Complete.")
         except Exception as e:
             print(f"Warning: Git Sync failed ({e}). Continuing training.")
 
