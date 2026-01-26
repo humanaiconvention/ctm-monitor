@@ -2420,21 +2420,51 @@ class UnifiedTrainer:
             subprocess.run(["git", "commit", "-m", msg, "--allow-empty"], check=False)
 
             # 3. Push to Public Live branch (for dashboard)
-            # Find the best remote (monitor preferred, then origin)
+            # Find the best remote (monitor-repo preferred for pure data, then monitor, then origin)
             remote = "origin"
             try:
                 res = subprocess.run(["git", "remote"], capture_output=True, text=True)
-                if "monitor" in res.stdout:
+                available_remotes = res.stdout.split()
+                if "monitor-repo" in available_remotes:
+                    remote = "monitor-repo"
+                elif "monitor" in available_remotes:
                     remote = "monitor"
             except:
                 pass
 
-            print(f"[Git Sync] Pushing to {remote}:live...")
-            result = subprocess.run(["git", "push", remote, "HEAD:live", "--force"], capture_output=True, text=True)
-            if result.returncode == 0:
-                print(f"[Git Sync] Pushed to {remote}:live successfully")
+            if remote == "monitor-repo":
+                # SURGICAL SYNC: Push ONLY the metrics file to avoid code clutter
+                print(f"[Git Sync] Performing Pure Data Sync to {remote}:main...")
+                try:
+                    # Uses a temporary index to create a commit with only the log file
+                    env = os.environ.copy()
+                    env["GIT_INDEX_FILE"] = ".git/index.monitor"
+                    subprocess.run(["git", "add", self.log_file], env=env, check=True)
+                    tree_hash = subprocess.check_output(["git", "write-tree"], env=env).decode().strip()
+                    commit_msg = f"CTM Data Sync: Step {step}"
+                    commit_hash = subprocess.check_output(["git", "commit-tree", tree_hash, "-m", commit_msg]).decode().strip()
+                    
+                    result = subprocess.run(["git", "push", remote, f"{commit_hash}:main", "--force"], capture_output=True, text=True)
+                    if result.returncode == 0:
+                        print(f"[Git Sync] Surgical Push to {remote}:main successful")
+                    else:
+                        print(f"[Git Sync] Surgical Push failed: {result.stderr}")
+                    
+                    if os.path.exists(".git/index.monitor"):
+                        os.remove(".git/index.monitor")
+                except Exception as e:
+                    print(f"[Git Sync] Error during surgical push: {e}")
+                    # Fallback to standard push if surgical fails
+                    subprocess.run(["git", "push", remote, "HEAD:main", "--force"], check=False)
             else:
-                print(f"[Git Sync] Push failed: {result.stderr}")
+                # Standard Sync
+                print(f"[Git Sync] Pushing to {remote}:live...")
+                target_branch = "main" if remote == "monitor" else "live"
+                result = subprocess.run(["git", "push", remote, f"HEAD:{target_branch}", "--force"], capture_output=True, text=True)
+                if result.returncode == 0:
+                    print(f"[Git Sync] Pushed to {remote}:{target_branch} successfully")
+                else:
+                    print(f"[Git Sync] Push failed: {result.stderr}")
 
         except Exception as e:
             print(f"Warning: Git Sync failed ({e}). Continuing training.")
