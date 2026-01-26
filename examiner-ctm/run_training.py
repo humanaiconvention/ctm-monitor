@@ -124,7 +124,7 @@ Collapse Detection:
     parser.add_argument('--recursive-operator', type=str, default='spectral',
                         choices=['spectral', 'linear', 'residual'],
                         help='Recursive weight operator type (default: spectral)')
-    parser.add_argument('--recursive-operator_rank', type=int, default=8,
+    parser.add_argument('--recursive-operator-rank', type=int, default=8,
                         help='Rank for recursive weight operators (default: 8)')
 
     # Advisor Grounding
