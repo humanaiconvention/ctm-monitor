@@ -13,28 +13,73 @@ SCRIPT_DIR = Path(__file__).parent.absolute()
 
 # Discovery logic for CORPUS_ROOT
 def discover_corpus_root():
-    # 1. Check for Environment Variable
+    candidates = []
+    
+    # 1. Environment Variable
     env_root = os.environ.get("CTM_CORPUS_ROOT")
-    if env_root and os.path.exists(env_root):
-        return Path(env_root)
+    if env_root: 
+        candidates.append(("ENV", Path(env_root)))
         
-    # 2. Check for parallel directory (L4 Structure: ~/examiner-ctm/corpus)
-    # If script is in ~/examiner-ctm/examiner-ctm/corpus_config.py
-    parent_corpus = SCRIPT_DIR.parent / "corpus"
-    if parent_corpus.exists() and any(parent_corpus.iterdir()):
-        # Check if it has more than just the foundational files
-        if (parent_corpus / "humanities").exists() or (parent_corpus / "camel-ai-biology").exists():
-            return parent_corpus
-            
-    # 3. Check for local articles (typical dev path)
-    if os.name == 'nt' and os.path.exists("D:\\articles"):
-        return Path("D:\\articles")
-        
-    # 4. Default to script-relative
-    return SCRIPT_DIR / "corpus"
+    # 2. Home directory (Standard Linux layout)
+    home = Path.home()
+    candidates.append(("HOME_ARTICLES", home / "articles"))
+    candidates.append(("HOME_ARTICLES_CAPS", home / "Articles"))
+    candidates.append(("HOME_DOWNLOADS_ARTICLES", home / "Downloads" / "articles"))
+    candidates.append(("HOME_CORPUS", home / "corpus"))
+    
+    # Auto-detect any articles/corpus in home
+    try:
+        for d in home.iterdir():
+            if d.is_dir() and d.name.lower() in ["articles", "corpus", "datasets"]:
+                candidates.append((f"DETECTED_{d.name.upper()}", d))
+    except: pass
+
+    # 3. Parallel to repo (L4 Structure: ~/examiner-ctm/articles or ~/articles)
+    candidates.append(("L4_PARALLEL_ARTICLES", SCRIPT_DIR.parent / "articles"))
+    candidates.append(("L4_PARALLEL_CORPUS", SCRIPT_DIR.parent / "corpus"))
+    
+    # 4. Deep search in parent (Up to 2 levels)
+    candidates.append(("PARENT_PARENT_ARTICLES", SCRIPT_DIR.parent.parent / "articles"))
+    
+    # 5. Inside repo (Fallback)
+    candidates.append(("LOCAL_REPO", SCRIPT_DIR / "corpus"))
+    
+    # 5. Root-level caches
+    candidates.append(("ROOT_ARTICLES", Path("/articles")))
+    candidates.append(("MNT_ARTICLES", Path("/mnt/articles")))
+
+    print(f"[CorpusDiscovery] Scanning candidates...")
+    
+    best_path = SCRIPT_DIR / "corpus"
+    max_score = -1
+    
+    for label, path in candidates:
+        if path.exists() and path.is_dir():
+            try:
+                # Calculate a "Volume Score"
+                # - Foundational files: small score
+                # - Specialized subdirs: HUGE score
+                found_files = len(list(path.glob("**/*.pdf"))) + len(list(path.glob("**/*.txt")))
+                has_humanities = (path / "humanities").exists()
+                has_bio = (path / "camel-ai-biology").exists()
+                
+                score = found_files
+                if has_humanities: score += 1000
+                if has_bio: score += 1000
+                
+                print(f"  - [{label}] Found at {path} (Files: {found_files}, Volume: {'YES' if has_humanities else 'NO'}, Score: {score})")
+                
+                if score > max_score:
+                    max_score = score
+                    best_path = path
+            except Exception as e:
+                print(f"  - [{label}] Error scanning {path}: {e}")
+                continue
+
+    print(f"[CorpusDiscovery] Selected: {best_path} (Global Files: {max_score if max_score >=0 else 0})")
+    return best_path
 
 CORPUS_ROOT = discover_corpus_root()
-print(f"[CorpusConfig] Resolved CORPUS_ROOT: {CORPUS_ROOT}")
 
 # Progressive learning phases
 CORPUS_PHASES = {
