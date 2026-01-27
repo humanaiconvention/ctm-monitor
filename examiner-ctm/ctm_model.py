@@ -43,18 +43,38 @@ def fused_sgd_update(params, grads, lr):
     # If Triton failed before, skip it permanently for this session
     if USE_CTM_TRITON and not _TRITON_FAILED_ONCE:
         try:
-            # Filter for floating point only
-            safe_params = [p for p, g in zip(params, grads) 
-                          if p is not None and g is not None 
-                          and p.is_floating_point() 
-                          and p.dtype in [torch.float32, torch.float16, torch.bfloat16]]
-            safe_grads = [g for p, g in zip(params, grads) 
-                         if p is not None and g is not None 
-                         and p.is_floating_point() 
-                         and p.dtype in [torch.float32, torch.float16, torch.bfloat16]]
+            # Identify CUDA params for Triton and CPU params for fallback
+            cuda_params = []
+            cuda_grads = []
+            cpu_params = []
+            cpu_grads = []
             
-            if safe_params:
-                triton_fused_sgd(safe_params, safe_grads, lr)
+            for p, g in zip(params, grads):
+                if p is None or g is None: continue
+                
+                # Check for floating point optimization candidates
+                if p.is_floating_point() and p.dtype in [torch.float32, torch.float16, torch.bfloat16]:
+                    if p.is_cuda:
+                        cuda_params.append(p)
+                        cuda_grads.append(g)
+                    else:
+                        cpu_params.append(p)
+                        cpu_grads.append(g)
+                else:
+                    # Non-floating point or other types -> CPU fallback list
+                    cpu_params.append(p)
+                    cpu_grads.append(g)
+            
+            # 1. Apply Triton to CUDA params
+            if cuda_params:
+                triton_fused_sgd(cuda_params, cuda_grads, lr)
+            
+            # 2. Apply PyTorch fallback to non-CUDA params
+            if cpu_params:
+                with torch.no_grad():
+                    for p, g in zip(cpu_params, cpu_grads):
+                        p.add_(g, alpha=-lr)
+                        
             return params
         except Exception as e:
             print(f"Triton SGD failed once, disabling for session: {e}")
