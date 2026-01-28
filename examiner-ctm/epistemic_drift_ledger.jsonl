@@ -309,3 +309,7 @@
 {"timestamp": "2026-01-28T05:06:23.041179Z", "step": 3480, "domain": "CENTRAL", "event": "SIGMA_SOFT_PENALTY", "log_det": -31.2803, "consecutive_violations": 2, "thresholds": {"warning": -10.0, "soft": -15.0, "hard": -20.0}}
 {"timestamp": "2026-01-28T05:07:14.824052Z", "step": 3490, "domain": "CENTRAL", "event": "SIGMA_HARD_RESET", "log_det": -29.4343, "consecutive_violations": 3, "thresholds": {"warning": -10.0, "soft": -15.0, "hard": -20.0}}
 {"timestamp": "2026-01-28T05:08:06.649229Z", "step": 3500, "domain": "CENTRAL", "event": "SIGMA_SOFT_PENALTY", "log_det": -40.2666, "consecutive_violations": 1, "thresholds": {"warning": -10.0, "soft": -15.0, "hard": -20.0}}
+{"timestamp": "2026-01-28T05:09:11.596948Z", "step": 3510, "domain": "CENTRAL", "event": "SIGMA_SOFT_PENALTY", "log_det": -999.0, "consecutive_violations": 2, "thresholds": {"warning": -10.0, "soft": -15.0, "hard": -20.0}}
+{"timestamp": "2026-01-28T05:10:27.022194Z", "step": 3520, "domain": "CENTRAL", "event": "SIGMA_HARD_RESET", "log_det": -999.0, "consecutive_violations": 3, "thresholds": {"warning": -10.0, "soft": -15.0, "hard": -20.0}}
+{"timestamp": "2026-01-28T05:11:16.774798Z", "step": 3530, "domain": "CENTRAL", "event": "SIGMA_SOFT_PENALTY", "log_det": -999.0, "consecutive_violations": 1, "thresholds": {"warning": -10.0, "soft": -15.0, "hard": -20.0}}
+{"timestamp": "2026-01-28T05:12:06.492595Z", "step": 3540, "domain": "CENTRAL", "event": "SIGMA_SOFT_PENALTY", "log_det": -999.0, "consecutive_violations": 2, "thresholds": {"warning": -10.0, "soft": -15.0, "hard": -20.0}}

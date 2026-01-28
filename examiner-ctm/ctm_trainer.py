@@ -2416,8 +2416,13 @@ class UnifiedTrainer:
         print("\n--- Git Heartbeat: Pushing Metrics ---")
         try:
             import subprocess
+            import os
+            
+            # Ensure we are using an absolute path to avoid pathspec mismatches in subdirectories
+            log_path = os.path.abspath(self.log_file)
+            
             # 1. Add metrics and progress logs
-            subprocess.run(["git", "add", self.log_file, "training_log.txt"], check=False)
+            subprocess.run(["git", "add", log_path, "training_log.txt"], check=False)
 
             # 2. Commit
             step = getattr(self, 'global_train_step', 0)
@@ -2439,47 +2444,29 @@ class UnifiedTrainer:
                 pass
 
             if remote == "monitor-repo":
-                # TRULY SURGICAL SYNC: Push ONLY the metrics file to the root of the remote repo
-                # Preserves the Dashboard code while updating live metrics.
-                print(f"[Git Sync] Performing Truly Surgical Data Sync to {remote}:main...")
+                # SURGICAL SYNC: Push ONLY the metrics file to avoid code clutter
+                print(f"[Git Sync] Performing Pure Data Sync to {remote}:main...")
                 try:
-                    # 1. Create a blob for the metrics file
-                    blob_hash = subprocess.check_output(["git", "hash-object", "-w", self.log_file]).decode().strip()
-                    
-                    # 2. Get the current tree from remote
-                    subprocess.run(["git", "fetch", remote, "main"], check=False)
-                    parent_commit = subprocess.check_output(["git", "rev-parse", f"{remote}/main"]).decode().strip()
-                    parent_tree = subprocess.check_output(["git", "rev-parse", f"{parent_commit}^{{tree}}"]).decode().strip()
-                    
-                    # 3. Use mktree to create a new tree based on the parent but with the updated blob
-                    # We use a trick: git ls-tree -r + grep/filter + git mktree
-                    tree_lines = subprocess.check_output(["git", "ls-tree", "-r", parent_tree]).decode().strip().split('\n')
-                    new_tree_lines = []
-                    log_filename = os.path.basename(self.log_file)
-                    for line in tree_lines:
-                        if not line.endswith(f"\t{log_filename}"):
-                            new_tree_lines.append(line)
-                    new_tree_lines.append(f"100644 blob {blob_hash}\t{log_filename}")
-                    
-                    new_tree_hash = subprocess.run(["git", "mktree"], input="\n".join(new_tree_lines).encode(), capture_output=True, check=True).stdout.decode().strip()
-                    
-                    # 4. Create a commit with the parent
+                    # Uses a temporary index to create a commit with only the log file
+                    env = os.environ.copy()
+                    env["GIT_INDEX_FILE"] = ".git/index.monitor"
+                    subprocess.run(["git", "add", log_path], env=env, check=True)
+                    tree_hash = subprocess.check_output(["git", "write-tree"], env=env).decode().strip()
                     commit_msg = f"CTM Data Sync: Step {step}"
-                    new_commit_hash = subprocess.check_output(["git", "commit-tree", new_tree_hash, "-p", parent_commit, "-m", commit_msg]).decode().strip()
+                    commit_hash = subprocess.check_output(["git", "commit-tree", tree_hash, "-m", commit_msg]).decode().strip()
                     
-                    # 5. Push specifically that commit to the remote main
-                    result = subprocess.run(["git", "push", remote, f"{new_commit_hash}:main"], capture_output=True, text=True)
-                    
+                    result = subprocess.run(["git", "push", remote, f"{commit_hash}:main", "--force"], capture_output=True, text=True)
                     if result.returncode == 0:
                         print(f"[Git Sync] Surgical Push to {remote}:main successful")
                     else:
                         print(f"[Git Sync] Surgical Push failed: {result.stderr}")
+                    
+                    if os.path.exists(".git/index.monitor"):
+                        os.remove(".git/index.monitor")
                 except Exception as e:
-                    print(f"[Git Sync] Error during truly surgical push: {e}")
-                    # Fallback to standard non-destructive push if mktree voodoo fails
-                    subprocess.run(["git", "add", self.log_file], check=False)
-                    subprocess.run(["git", "commit", "-m", f"CTM Sync: {step}"], check=False)
-                    subprocess.run(["git", "push", remote, "HEAD:main"], check=False)
+                    print(f"[Git Sync] Error during surgical push: {e}")
+                    # Fallback to standard push if surgical fails
+                    subprocess.run(["git", "push", remote, "HEAD:main", "--force"], check=False)
             else:
                 # Standard Sync
                 print(f"[Git Sync] Pushing to {remote}:live...")
@@ -2596,10 +2583,8 @@ class UnifiedTrainer:
                 self.sync_specialists_to_central(alpha=0.2)
                 self.broadcast_central_to_specialists()
                 
-                # Checkpoint persistence: Save every significant sync (every 100 actual steps performed)
-                # Fixed Alignment Bug: Use 'step' (local execution count) not just global_train_step
-                # Also force save if we haven't saved in a while
-                if step % 100 == 0:
+                # Checkpoint persistence: reduce load to every 100 steps
+                if self.global_train_step % 100 == 0:
                     self.save_checkpoint(self.global_train_step)
                     # Phase 4.4: Staccato Health Check
                     self.health_check()
